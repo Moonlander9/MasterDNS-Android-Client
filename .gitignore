@@ -1,0 +1,30 @@
+**/.DS_Store
+*.iml
+
+# Android Studio / IntelliJ
+/.idea/
+
+# Gradle
+/.gradle/
+/build/
+/app/build/
+/app/.cxx/
+
+# Local SDK and signing material
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# Local upstream checkout used for syncs
+/MasterDnsVPN/
+
+# Release bundles created outside CI
+/release-packages/
+*.apk
+*.aab
+*.apks
+
+# Python cache
+**/__pycache__/
+*.pyc
