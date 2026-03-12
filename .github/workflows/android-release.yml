@@ -26,7 +26,7 @@ jobs:
       APP_VERSION_CODE: ${{ inputs.version_code }}
       APP_VERSION_NAME: ${{ inputs.version_name }}
       CHAQUOPY_BUILD_PYTHON: python
-      RELEASE_STORE_FILE: ${{ runner.temp }}/release-keystore.jks
+      RELEASE_STORE_FILE: /tmp/release-keystore.jks
       RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
       RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
       RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
