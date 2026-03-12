@@ -33,6 +33,8 @@
     <string name="action_close">Close</string>
 
     <string name="home_status_title">Tunnel Status</string>
+    <string name="home_status_pill">%1$s</string>
+    <string name="home_hero_title">Private connection control</string>
     <string name="home_status_value">State: %1$s</string>
     <string name="home_status_code">Code: %1$s</string>
     <string name="home_routing_mode">Routing: %1$s</string>
@@ -40,24 +42,41 @@
     <string name="home_routing_apps">Whitelisted apps: %1$d</string>
     <string name="home_routing_full">Full Tunnel</string>
     <string name="home_routing_split">Split Allowlist</string>
+    <string name="home_routing_metric">Routing Mode</string>
+    <string name="home_dns_metric">Primary Resolver</string>
+    <string name="home_apps_metric">Selected Apps</string>
+    <string name="home_build_metric">App Version</string>
+    <string name="home_domains_metric">Domains</string>
+    <string name="home_resolvers_metric">Resolvers</string>
+    <string name="home_transport_title">Transport Overview</string>
     <string name="home_tcp_first_warning">TCP and UDP traffic are carried through the Android tunnel across IPv4 and IPv6 routes.</string>
     <string name="home_validation_title">Configuration issues found</string>
+    <string name="home_validation_subtitle">Resolve these before relying on the tunnel.</string>
     <string name="home_open_config">Open Config</string>
     <string name="home_quick_actions">Quick Actions</string>
+    <string name="home_quick_actions_subtitle">Import, export, and share your active profile.</string>
+    <string name="home_tunnel_details_title">Tunnel Details</string>
 
     <string name="routing_warning_title">Transport Note</string>
     <string name="routing_warning_body">Android now routes tunnel TCP and UDP traffic through the same local SOCKS path. App-based full and split routing remain unchanged.</string>
+    <string name="routing_hero_title">Choose how apps use the tunnel</string>
+    <string name="routing_hero_subtitle">Mirror the standard VPN app flow: one clear mode, then a clean app picker if split routing is enabled.</string>
     <string name="routing_mode_title">VPN Routing Mode</string>
+    <string name="routing_mode_subtitle">Switch between full-device protection and selected-app routing.</string>
     <string name="routing_mode_full">Full Tunnel</string>
     <string name="routing_mode_split">Split Tunnel (Allowlist)</string>
     <string name="routing_mode_full_desc">Route all apps through VPN except this app.</string>
     <string name="routing_mode_split_desc">Route only selected apps through VPN.</string>
     <string name="routing_quick_add_title">Quick Add</string>
+    <string name="routing_quick_add_subtitle">Fast access to common chat and social apps.</string>
     <string name="routing_app_picker_title">App Allowlist</string>
+    <string name="routing_app_picker_subtitle">Search installed apps and decide exactly what goes through the VPN.</string>
     <string name="routing_app_search_label">Search installed apps</string>
     <string name="routing_no_quick_apps">No quick-add apps found on this device.</string>
     <string name="routing_no_apps">No installed apps match your search.</string>
     <string name="routing_app_count">Selected apps: %1$d</string>
+    <string name="routing_metric_selected">Selected</string>
+    <string name="routing_metric_installed">Installed Apps</string>
 
     <string name="profile_qr_title">Profile QR</string>
     <string name="profile_qr_failed">Failed to generate QR code for this profile.</string>
@@ -65,7 +84,13 @@
     <string name="profile_qr_hint">Scan this code from another phone to import the profile string.</string>
 
     <string name="config_search_label">Search settings</string>
+    <string name="config_hero_title">Connection configuration</string>
+    <string name="config_hero_subtitle">Core tunnel values stay visible, while advanced tuning stays out of the way until needed.</string>
+    <string name="config_summary_domains">Domains</string>
+    <string name="config_summary_resolvers">Resolvers</string>
+    <string name="config_summary_errors">Errors</string>
     <string name="config_policy_title">Android Policy</string>
+    <string name="config_policy_subtitle">Platform-enforced tunnel behavior and encryption entry point.</string>
     <string name="config_protocol_type_label">PROTOCOL_TYPE</string>
     <string name="config_encryption_method_label">DATA_ENCRYPTION_METHOD</string>
     <string name="config_listen_ip_label">LISTEN_IP</string>
@@ -73,25 +98,30 @@
     <string name="config_tcp_first_warning">Android uses one local SOCKS5 tunnel for TCP and UDP traffic across IPv4 and IPv6 routes.</string>
     <string name="config_routing_tab_hint">Routing mode and app whitelist are managed in the Routing tab.</string>
     <string name="config_essentials_title">Essentials</string>
+    <string name="config_essentials_subtitle">Everything required to bring a profile online.</string>
     <string name="config_encryption_key_label">ENCRYPTION_KEY</string>
     <string name="config_domains_label">DOMAINS (comma-separated)</string>
     <string name="config_resolvers_label">RESOLVER_DNS_SERVERS (comma-separated)</string>
     <string name="config_proxy_title">Local Proxy and Auth</string>
+    <string name="config_proxy_subtitle">Local SOCKS entrypoint and credentials used by the Android tunnel.</string>
     <string name="config_listen_port_label">LISTEN_PORT</string>
     <string name="config_socks_auth_label">SOCKS5_AUTH</string>
     <string name="config_socks_user_label">SOCKS5_USER</string>
     <string name="config_socks_pass_label">SOCKS5_PASS</string>
     <string name="config_socks_handshake_timeout_label">SOCKS_HANDSHAKE_TIMEOUT</string>
     <string name="config_transport_title">Transport Compatibility</string>
+    <string name="config_transport_subtitle">Compression and payload compatibility settings.</string>
     <string name="config_base_encode_label">BASE_ENCODE_DATA</string>
     <string name="config_upload_compression_label">UPLOAD_COMPRESSION_TYPE</string>
     <string name="config_download_compression_label">DOWNLOAD_COMPRESSION_TYPE</string>
     <string name="config_transport_hint">Compression values: 0=OFF, 1=ZSTD, 2=LZ4, 3=ZLIB.</string>
     <string name="config_diagnostics_title">Diagnostics</string>
+    <string name="config_diagnostics_subtitle">Logging and troubleshooting visibility.</string>
     <string name="config_log_level_label">LOG_LEVEL</string>
     <string name="config_show_advanced">Show Advanced Settings</string>
     <string name="config_hide_advanced">Hide Advanced Settings</string>
     <string name="config_advanced_title">Advanced Tuning</string>
+    <string name="config_advanced_subtitle">Use these only when you need to tune tunnel behavior.</string>
     <string name="config_packet_duplication_label">PACKET_DUPLICATION_COUNT</string>
     <string name="config_max_packets_batch_label">MAX_PACKETS_PER_BATCH</string>
     <string name="config_resolver_balancing_label">RESOLVER_BALANCING_STRATEGY</string>
@@ -110,12 +140,19 @@
     <string name="config_dns_workers_label">NUM_DNS_WORKERS</string>
     <string name="config_socket_buffer_label">SOCKET_BUFFER_SIZE</string>
     <string name="config_validation_errors_title">Validation Errors</string>
+    <string name="config_validation_errors_subtitle">These values currently violate Android client requirements.</string>
     <string name="config_no_matches">No settings match your search.</string>
 
+    <string name="scanner_hero_title">DNS scanner control room</string>
+    <string name="scanner_hero_subtitle">Scan, validate, and apply fast resolvers without leaving the app.</string>
+    <string name="scanner_status_pill">Status: %1$s</string>
+    <string name="scanner_summary_found">Resolvers Found</string>
+    <string name="scanner_summary_speed">Scan Speed</string>
     <string name="scanner_status_title">Scanner Status</string>
     <string name="scanner_status_value">%1$s | %2$s</string>
     <string name="scanner_error_value">Scanner error: %1$s</string>
     <string name="scanner_setup_title">Scanner Setup</string>
+    <string name="scanner_setup_subtitle">Target range, DNS record behavior, and optional proxy verification.</string>
     <string name="scanner_cidr_value">CIDR: %1$s</string>
     <string name="scanner_select_cidr">Select CIDR File</string>
     <string name="scanner_domain_label">Scan Domain</string>
@@ -127,6 +164,7 @@
     <string name="scanner_slipstream_path_label">Slipstream Binary Path</string>
     <string name="scanner_proxy_unavailable">Proxy test unavailable on this device/path. DNS scan still works.</string>
     <string name="scanner_run_controls_title">Run Controls</string>
+    <string name="scanner_run_controls_subtitle">The core execution actions for an active scan.</string>
     <string name="scanner_start">Start Scan</string>
     <string name="scanner_pause">Pause</string>
     <string name="scanner_resume">Resume</string>
@@ -134,8 +172,10 @@
     <string name="scanner_stop">Stop</string>
     <string name="scanner_save_csv">Save CSV</string>
     <string name="scanner_stats_title">Scanner Stats</string>
+    <string name="scanner_stats_subtitle">Live progress and the last exported result set.</string>
     <string name="scanner_stats_value">Scanned %1$d/%2$d, found %3$d DNS, proxy pass %4$d, proxy fail %5$d, speed %6$.1f IP/s</string>
     <string name="scanner_last_csv">Last CSV: %1$s</string>
+    <string name="scanner_best_result_title">Top Resolver</string>
     <string name="scanner_best_dns">Best DNS: %1$s (%2$d ms)</string>
     <string name="scanner_apply_to_tunnel">Apply To Tunnel</string>
     <string name="scanner_results_title">Scanner Results (%1$d)</string>
@@ -157,7 +197,12 @@
     <string name="scanner_preset_deep">Deep</string>
     <string name="scanner_preset_full">Full</string>
 
+    <string name="logs_hero_title">Tunnel diagnostics</string>
+    <string name="logs_hero_subtitle">Review the current log stream, filter signal from noise, and export when you need deeper debugging.</string>
+    <string name="logs_summary_visible">Visible Logs</string>
+    <string name="logs_summary_total">Total Logs</string>
     <string name="logs_controls_title">Log Controls</string>
+    <string name="logs_controls_subtitle">Clear, export, or switch between a live tail and the full retained history.</string>
     <string name="logs_clear">Clear</string>
     <string name="logs_export">Export</string>
     <string name="logs_show_tail">Show Tail Logs</string>

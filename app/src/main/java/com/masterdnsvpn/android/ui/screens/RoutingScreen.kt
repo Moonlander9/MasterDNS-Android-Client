@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -31,6 +31,12 @@ import com.masterdnsvpn.android.MainUiState
 import com.masterdnsvpn.android.QuickAddPackages
 import com.masterdnsvpn.android.R
 import com.masterdnsvpn.android.VpnMode
+import com.masterdnsvpn.android.ui.theme.MetricBadge
+import com.masterdnsvpn.android.ui.theme.SectionTitle
+import com.masterdnsvpn.android.ui.theme.StatusPill
+import com.masterdnsvpn.android.ui.theme.VpnAppBackground
+import com.masterdnsvpn.android.ui.theme.VpnCard
+import com.masterdnsvpn.android.ui.theme.VpnHeroCard
 
 const val ROUTING_MODE_FULL_TAG = "routing_mode_full"
 const val ROUTING_MODE_SPLIT_TAG = "routing_mode_split"
@@ -64,127 +70,162 @@ fun RoutingScreen(
 
     val splitErrors = state.validationErrors.filter { it.contains("SPLIT_ALLOWLIST") }
 
-    LazyColumn(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        if (state.showTcpFirstWarning) {
+    VpnAppBackground {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item {
-                RoutingSectionCard(title = stringResource(R.string.routing_warning_title)) {
-                    Text(
-                        text = stringResource(R.string.routing_warning_body),
-                        style = MaterialTheme.typography.bodyMedium,
+                VpnHeroCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
+                        title = stringResource(R.string.routing_hero_title),
+                        subtitle = stringResource(R.string.routing_hero_subtitle),
+                    )
+                    StatusPill(
+                        label = if (state.config.vpnMode == VpnMode.FULL) {
+                            stringResource(R.string.routing_mode_full)
+                        } else {
+                            stringResource(R.string.routing_mode_split)
+                        },
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        MetricBadge(
+                            label = stringResource(R.string.routing_metric_selected),
+                            value = selectedPackages.size.toString(),
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetricBadge(
+                            label = stringResource(R.string.routing_metric_installed),
+                            value = state.installedApps.size.toString(),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (state.showTcpFirstWarning) {
+                        Text(
+                            text = stringResource(R.string.routing_warning_body),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            item {
+                RoutingSectionCard(
+                    title = stringResource(R.string.routing_mode_title),
+                    subtitle = stringResource(R.string.routing_mode_subtitle),
+                ) {
+                    RoutingModeRow(
+                        modifier = Modifier.testTag(ROUTING_MODE_FULL_TAG),
+                        selected = state.config.vpnMode == VpnMode.FULL,
+                        title = stringResource(R.string.routing_mode_full),
+                        description = stringResource(R.string.routing_mode_full_desc),
+                        onClick = { onVpnModeChanged(VpnMode.FULL) },
+                    )
+                    RoutingModeRow(
+                        modifier = Modifier.testTag(ROUTING_MODE_SPLIT_TAG),
+                        selected = state.config.vpnMode == VpnMode.SPLIT_ALLOWLIST,
+                        title = stringResource(R.string.routing_mode_split),
+                        description = stringResource(R.string.routing_mode_split_desc),
+                        onClick = { onVpnModeChanged(VpnMode.SPLIT_ALLOWLIST) },
                     )
                 }
             }
-        }
 
-        item {
-            RoutingSectionCard(title = stringResource(R.string.routing_mode_title)) {
-                RoutingModeRow(
-                    modifier = Modifier.testTag(ROUTING_MODE_FULL_TAG),
-                    selected = state.config.vpnMode == VpnMode.FULL,
-                    title = stringResource(R.string.routing_mode_full),
-                    description = stringResource(R.string.routing_mode_full_desc),
-                    onClick = { onVpnModeChanged(VpnMode.FULL) },
-                )
-                RoutingModeRow(
-                    modifier = Modifier.testTag(ROUTING_MODE_SPLIT_TAG),
-                    selected = state.config.vpnMode == VpnMode.SPLIT_ALLOWLIST,
-                    title = stringResource(R.string.routing_mode_split),
-                    description = stringResource(R.string.routing_mode_split_desc),
-                    onClick = { onVpnModeChanged(VpnMode.SPLIT_ALLOWLIST) },
-                )
-            }
-        }
+            if (state.config.vpnMode == VpnMode.SPLIT_ALLOWLIST) {
+                item {
+                    RoutingSectionCard(
+                        title = stringResource(R.string.routing_quick_add_title),
+                        subtitle = stringResource(R.string.routing_quick_add_subtitle),
+                    ) {
+                        if (quickAddApps.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.routing_no_quick_apps),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        } else {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(quickAddApps, key = { it.packageName }) { app ->
+                                    FilterChip(
+                                        selected = app.packageName in selectedPackages,
+                                        onClick = {
+                                            if (app.packageName in selectedPackages) {
+                                                onPackageToggled(app.packageName, false)
+                                            } else {
+                                                onQuickAddPackage(app.packageName)
+                                            }
+                                        },
+                                        label = { Text(text = app.label) },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
 
-        if (state.config.vpnMode == VpnMode.SPLIT_ALLOWLIST) {
-            item {
-                RoutingSectionCard(title = stringResource(R.string.routing_quick_add_title)) {
-                    if (quickAddApps.isEmpty()) {
+                item {
+                    RoutingSectionCard(
+                        title = stringResource(R.string.routing_app_picker_title),
+                        subtitle = stringResource(R.string.routing_app_picker_subtitle),
+                    ) {
                         Text(
-                            text = stringResource(R.string.routing_no_quick_apps),
+                            text = stringResource(R.string.routing_app_count, selectedPackages.size),
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    } else {
-                        quickAddApps.forEach { app ->
-                            FilterChip(
-                                selected = app.packageName in selectedPackages,
-                                onClick = {
-                                    if (app.packageName in selectedPackages) {
-                                        onPackageToggled(app.packageName, false)
-                                    } else {
-                                        onQuickAddPackage(app.packageName)
-                                    }
-                                },
-                                label = { Text(text = app.label) },
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            label = { Text(text = stringResource(R.string.routing_app_search_label)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(ROUTING_APP_SEARCH_TAG),
+                            singleLine = true,
+                        )
+                        splitErrors.forEach { error ->
+                            Text(
+                                text = error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
                             )
                         }
                     }
                 }
-            }
 
-            item {
-                RoutingSectionCard(title = stringResource(R.string.routing_app_picker_title)) {
-                    Text(
-                        text = stringResource(R.string.routing_app_count, selectedPackages.size),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        label = { Text(text = stringResource(R.string.routing_app_search_label)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag(ROUTING_APP_SEARCH_TAG),
-                        singleLine = true,
-                    )
-                    splitErrors.forEach { error ->
+                if (filteredApps.isEmpty()) {
+                    item {
                         Text(
-                            text = error,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
+                            text = stringResource(R.string.routing_no_apps),
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
-                }
-            }
-
-            if (filteredApps.isEmpty()) {
-                item {
-                    Text(
-                        text = stringResource(R.string.routing_no_apps),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
-                }
-            } else {
-                items(filteredApps, key = { it.packageName }) { app ->
-                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onPackageToggled(app.packageName, app.packageName !in selectedPackages)
-                                }
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Checkbox(
-                                checked = app.packageName in selectedPackages,
-                                onCheckedChange = null,
-                            )
-                            Column(
-                                modifier = Modifier.padding(start = 8.dp),
+                } else {
+                    items(filteredApps, key = { it.packageName }) { app ->
+                        VpnCard(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onPackageToggled(app.packageName, app.packageName !in selectedPackages)
+                                    },
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(
-                                    text = app.label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
+                                Checkbox(
+                                    checked = app.packageName in selectedPackages,
+                                    onCheckedChange = null,
                                 )
-                                Text(
-                                    text = app.packageName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
+                                Column(
+                                    modifier = Modifier.padding(start = 10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Text(
+                                        text = app.label,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        text = app.packageName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }
@@ -202,26 +243,31 @@ private fun RoutingModeRow(
     description: String,
     onClick: () -> Unit,
 ) {
-    Row(
+    VpnCard(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(onClick = onClick),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
     ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Column(
-            modifier = Modifier.padding(start = 8.dp),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-            )
+            RadioButton(selected = selected, onClick = onClick)
+            Column(
+                modifier = Modifier.padding(start = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -229,19 +275,11 @@ private fun RoutingModeRow(
 @Composable
 private fun RoutingSectionCard(
     title: String,
+    subtitle: String? = null,
     content: @Composable () -> Unit,
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            content()
-        }
+    VpnCard(modifier = Modifier.fillMaxWidth()) {
+        SectionTitle(title = title, subtitle = subtitle)
+        content()
     }
 }

@@ -4,12 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -31,6 +29,12 @@ import com.masterdnsvpn.android.scanner.ScanStatus
 import com.masterdnsvpn.android.scanner.ScannerConfig
 import com.masterdnsvpn.android.scanner.ScannerEntry
 import com.masterdnsvpn.android.scanner.ScannerSessionState
+import com.masterdnsvpn.android.ui.theme.MetricBadge
+import com.masterdnsvpn.android.ui.theme.SectionTitle
+import com.masterdnsvpn.android.ui.theme.StatusPill
+import com.masterdnsvpn.android.ui.theme.VpnAppBackground
+import com.masterdnsvpn.android.ui.theme.VpnCard
+import com.masterdnsvpn.android.ui.theme.VpnHeroCard
 
 const val SCANNER_START_TAG = "scanner_start"
 const val SCANNER_BEST_APPLY_TAG = "scanner_best_apply"
@@ -64,28 +68,33 @@ fun ScannerScreen(
     val canStop = isRunning || isPaused
     val canSave = scannerSession.entries.isNotEmpty()
 
-    LazyColumn(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.scanner_status_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+    VpnAppBackground {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item {
+                VpnHeroCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
+                        title = stringResource(R.string.scanner_hero_title),
+                        subtitle = stringResource(R.string.scanner_hero_subtitle),
                     )
+                    StatusPill(
+                        label = stringResource(R.string.scanner_status_pill, scannerSession.status.name),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        MetricBadge(
+                            label = stringResource(R.string.scanner_summary_found),
+                            value = scannerSession.stats.foundDns.toString(),
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetricBadge(
+                            label = stringResource(R.string.scanner_summary_speed),
+                            value = String.format("%.1f IP/s", scannerSession.stats.speedIpsPerSec),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     Text(
-                        text = stringResource(
-                            R.string.scanner_status_value,
-                            scannerSession.status.name,
-                            scannerSession.lastMessage,
-                        ),
+                        text = scannerSession.lastMessage,
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     scannerSession.error?.let { error ->
                         Text(
@@ -96,22 +105,16 @@ fun ScannerScreen(
                     }
                 }
             }
-        }
 
-        item {
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.scanner_setup_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+            item {
+                VpnCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
+                        title = stringResource(R.string.scanner_setup_title),
+                        subtitle = stringResource(R.string.scanner_setup_subtitle),
                     )
                     Text(
                         text = stringResource(R.string.scanner_cidr_value, scannerConfig.cidrLabel),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                     Button(
                         onClick = onScannerPickCidr,
@@ -131,7 +134,6 @@ fun ScannerScreen(
                         label = { Text(text = stringResource(R.string.scanner_concurrency_label)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
-
                     Text(
                         text = stringResource(R.string.scanner_record_type_title),
                         style = MaterialTheme.typography.labelLarge,
@@ -145,7 +147,6 @@ fun ScannerScreen(
                             )
                         }
                     }
-
                     Text(
                         text = stringResource(R.string.scanner_preset_title),
                         style = MaterialTheme.typography.labelLarge,
@@ -159,29 +160,16 @@ fun ScannerScreen(
                             )
                         }
                     }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(text = stringResource(R.string.scanner_random_subdomain_label))
-                        Switch(
-                            checked = scannerConfig.randomSubdomain,
-                            onCheckedChange = onScannerRandomSubdomainChanged,
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(text = stringResource(R.string.scanner_proxy_test_label))
-                        Switch(
-                            checked = scannerConfig.proxyTestEnabled,
-                            onCheckedChange = onScannerProxyEnabledChanged,
-                        )
-                    }
+                    ToggleRow(
+                        label = stringResource(R.string.scanner_random_subdomain_label),
+                        checked = scannerConfig.randomSubdomain,
+                        onCheckedChange = onScannerRandomSubdomainChanged,
+                    )
+                    ToggleRow(
+                        label = stringResource(R.string.scanner_proxy_test_label),
+                        checked = scannerConfig.proxyTestEnabled,
+                        onCheckedChange = onScannerProxyEnabledChanged,
+                    )
                     if (scannerConfig.proxyTestEnabled) {
                         OutlinedTextField(
                             value = scannerConfig.slipstreamBinaryPath,
@@ -199,87 +187,44 @@ fun ScannerScreen(
                     }
                 }
             }
-        }
 
-        item {
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.scanner_run_controls_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+            item {
+                VpnCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
+                        title = stringResource(R.string.scanner_run_controls_title),
+                        subtitle = stringResource(R.string.scanner_run_controls_subtitle),
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Button(
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag(SCANNER_START_TAG),
-                            onClick = onScannerStart,
-                            enabled = canStart,
-                        ) {
-                            Text(text = stringResource(R.string.scanner_start))
-                        }
-                        Button(
-                            modifier = Modifier.weight(1f),
-                            onClick = onScannerPause,
-                            enabled = canPause,
-                        ) {
-                            Text(text = stringResource(R.string.scanner_pause))
-                        }
-                        Button(
-                            modifier = Modifier.weight(1f),
-                            onClick = onScannerResume,
-                            enabled = canResume,
-                        ) {
-                            Text(text = stringResource(R.string.scanner_resume))
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Button(
-                            modifier = Modifier.weight(1f),
-                            onClick = onScannerShuffle,
-                            enabled = canShuffle,
-                        ) {
-                            Text(text = stringResource(R.string.scanner_shuffle))
-                        }
-                        Button(
-                            modifier = Modifier.weight(1f),
-                            onClick = onScannerStop,
-                            enabled = canStop,
-                        ) {
-                            Text(text = stringResource(R.string.scanner_stop))
-                        }
-                        Button(
-                            modifier = Modifier.weight(1f),
-                            onClick = onScannerSave,
-                            enabled = canSave,
-                        ) {
-                            Text(text = stringResource(R.string.scanner_save_csv))
-                        }
-                    }
+                    ActionRow(
+                        leftLabel = stringResource(R.string.scanner_start),
+                        leftEnabled = canStart,
+                        leftModifier = Modifier.testTag(SCANNER_START_TAG),
+                        leftAction = onScannerStart,
+                        middleLabel = stringResource(R.string.scanner_pause),
+                        middleEnabled = canPause,
+                        middleAction = onScannerPause,
+                        rightLabel = stringResource(R.string.scanner_resume),
+                        rightEnabled = canResume,
+                        rightAction = onScannerResume,
+                    )
+                    ActionRow(
+                        leftLabel = stringResource(R.string.scanner_shuffle),
+                        leftEnabled = canShuffle,
+                        leftAction = onScannerShuffle,
+                        middleLabel = stringResource(R.string.scanner_stop),
+                        middleEnabled = canStop,
+                        middleAction = onScannerStop,
+                        rightLabel = stringResource(R.string.scanner_save_csv),
+                        rightEnabled = canSave,
+                        rightAction = onScannerSave,
+                    )
                 }
             }
-        }
 
-        item {
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.scanner_stats_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+            item {
+                VpnCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
+                        title = stringResource(R.string.scanner_stats_title),
+                        subtitle = stringResource(R.string.scanner_stats_subtitle),
                     )
                     Text(
                         text = stringResource(
@@ -291,35 +236,30 @@ fun ScannerScreen(
                             scannerSession.stats.proxyFailed,
                             scannerSession.stats.speedIpsPerSec,
                         ),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                     scannerSession.csvPath?.let { csvPath ->
                         Text(
                             text = stringResource(R.string.scanner_last_csv, csvPath),
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
-        }
 
-        scannerSession.entries.firstOrNull()?.let { top ->
-            item {
-                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.scanner_best_dns, top.dns, top.pingMs),
-                            style = MaterialTheme.typography.bodyMedium,
+            scannerSession.entries.firstOrNull()?.let { top ->
+                item {
+                    VpnCard(modifier = Modifier.fillMaxWidth()) {
+                        SectionTitle(
+                            title = stringResource(R.string.scanner_best_result_title),
+                            subtitle = stringResource(R.string.scanner_best_dns, top.dns, top.pingMs),
                         )
                         Button(
-                            modifier = Modifier.testTag(SCANNER_BEST_APPLY_TAG),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(SCANNER_BEST_APPLY_TAG),
                             onClick = { onScannerApplyDns(top.dns) },
                         ) {
                             Text(text = stringResource(R.string.scanner_apply_to_tunnel))
@@ -327,33 +267,90 @@ fun ScannerScreen(
                     }
                 }
             }
-        }
 
-        item {
-            Text(
-                text = stringResource(R.string.scanner_results_title, scannerSession.entries.size),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-
-        if (scannerSession.entries.isEmpty()) {
             item {
                 Text(
-                    text = stringResource(R.string.scanner_no_results),
-                    style = MaterialTheme.typography.bodySmall,
+                    text = stringResource(R.string.scanner_results_title, scannerSession.entries.size),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            if (scannerSession.entries.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.scanner_no_results),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
+            items(
+                items = scannerSession.entries,
+                key = { entry -> "${entry.dns}-${entry.foundAt}" },
+            ) { entry ->
+                ScannerResultCard(
+                    entry = entry,
+                    onApplyDns = onScannerApplyDns,
                 )
             }
         }
+    }
+}
 
-        items(
-            items = scannerSession.entries,
-            key = { entry -> "${entry.dns}-${entry.foundAt}" },
-        ) { entry ->
-            ScannerResultCard(
-                entry = entry,
-                onApplyDns = onScannerApplyDns,
-            )
+@Composable
+private fun ToggleRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun ActionRow(
+    leftLabel: String,
+    leftEnabled: Boolean,
+    leftAction: () -> Unit,
+    middleLabel: String,
+    middleEnabled: Boolean,
+    middleAction: () -> Unit,
+    rightLabel: String,
+    rightEnabled: Boolean,
+    rightAction: () -> Unit,
+    leftModifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Button(
+            modifier = leftModifier.weight(1f),
+            onClick = leftAction,
+            enabled = leftEnabled,
+        ) {
+            Text(text = leftLabel)
+        }
+        Button(
+            modifier = Modifier.weight(1f),
+            onClick = middleAction,
+            enabled = middleEnabled,
+        ) {
+            Text(text = middleLabel)
+        }
+        Button(
+            modifier = Modifier.weight(1f),
+            onClick = rightAction,
+            enabled = rightEnabled,
+        ) {
+            Text(text = rightLabel)
         }
     }
 }
@@ -393,30 +390,31 @@ private fun ScannerResultCard(
         null -> stringResource(R.string.scanner_pending)
     }
 
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(
-                    R.string.scanner_result_line,
-                    entry.dns,
-                    entry.pingMs,
-                    proxyLabel,
-                    ipVersion,
-                    entry.tcpUdp ?: stringResource(R.string.scanner_pending),
-                    security,
-                    edns0,
-                    entry.resolvedIp ?: stringResource(R.string.scanner_pending),
-                    entry.isp?.org ?: stringResource(R.string.scanner_pending),
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace,
-            )
-            Button(onClick = { onApplyDns(entry.dns) }) {
-                Text(text = stringResource(R.string.scanner_apply))
-            }
+    VpnCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = entry.dns,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = stringResource(
+                R.string.scanner_result_line,
+                entry.dns,
+                entry.pingMs,
+                proxyLabel,
+                ipVersion,
+                entry.tcpUdp ?: stringResource(R.string.scanner_pending),
+                security,
+                edns0,
+                entry.resolvedIp ?: stringResource(R.string.scanner_pending),
+                entry.isp?.org ?: stringResource(R.string.scanner_pending),
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Button(onClick = { onApplyDns(entry.dns) }) {
+            Text(text = stringResource(R.string.scanner_apply))
         }
     }
 }

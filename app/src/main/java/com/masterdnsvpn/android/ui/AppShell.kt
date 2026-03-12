@@ -1,20 +1,24 @@
 package com.masterdnsvpn.android.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.ListAlt
+import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -54,7 +58,7 @@ private sealed class AppDestination(
     data object Routing : AppDestination(
         route = "routing",
         titleRes = R.string.tab_routing,
-        icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
+        icon = { Icon(Icons.Outlined.Route, contentDescription = null) },
     )
 
     data object Scanner : AppDestination(
@@ -66,7 +70,7 @@ private sealed class AppDestination(
     data object Logs : AppDestination(
         route = "logs",
         titleRes = R.string.tab_logs,
-        icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
+        icon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null) },
     )
 
     companion object {
@@ -78,8 +82,8 @@ private sealed class AppDestination(
     }
 }
 
-@Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun MasterDnsVpnApp(
     state: MainUiState,
     viewModel: MainViewModel,
@@ -101,13 +105,23 @@ fun MasterDnsVpnApp(
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = { Text(text = stringResource(id = currentDestination.titleRes)) },
+                scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+            ) {
                 AppDestination.topLevel.forEach { destination ->
                     NavigationBarItem(
                         modifier = Modifier.testTag("tab_${destination.route}"),
@@ -115,6 +129,13 @@ fun MasterDnsVpnApp(
                         onClick = { navigateTopLevel(navController, destination) },
                         icon = destination.icon,
                         label = { Text(text = stringResource(id = destination.titleRes)) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                            indicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
                     )
                 }
             }

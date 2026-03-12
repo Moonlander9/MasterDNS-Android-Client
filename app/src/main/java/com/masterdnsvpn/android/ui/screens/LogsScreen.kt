@@ -1,7 +1,8 @@
 package com.masterdnsvpn.android.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -26,6 +27,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.masterdnsvpn.android.LogLine
 import com.masterdnsvpn.android.R
+import com.masterdnsvpn.android.ui.theme.MetricBadge
+import com.masterdnsvpn.android.ui.theme.SectionTitle
+import com.masterdnsvpn.android.ui.theme.VpnAppBackground
+import com.masterdnsvpn.android.ui.theme.VpnCard
+import com.masterdnsvpn.android.ui.theme.VpnHeroCard
 
 const val LOGS_MODE_TAG = "logs_mode"
 
@@ -55,38 +61,54 @@ fun LogsScreen(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.logs_controls_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+    VpnAppBackground {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item {
+                VpnHeroCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
+                        title = stringResource(R.string.logs_hero_title),
+                        subtitle = stringResource(R.string.logs_hero_subtitle),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        MetricBadge(
+                            label = stringResource(R.string.logs_summary_visible),
+                            value = filteredLogs.size.toString(),
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetricBadge(
+                            label = stringResource(R.string.logs_summary_total),
+                            value = logs.size.toString(),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+
+            item {
+                VpnCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
+                        title = stringResource(R.string.logs_controls_title),
+                        subtitle = stringResource(R.string.logs_controls_subtitle),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = onClearLogs) {
+                        Button(onClick = onClearLogs, modifier = Modifier.weight(1f)) {
                             Text(text = stringResource(R.string.logs_clear))
                         }
-                        Button(onClick = onExportLogs) {
+                        Button(onClick = onExportLogs, modifier = Modifier.weight(1f)) {
                             Text(text = stringResource(R.string.logs_export))
                         }
-                        Button(
-                            modifier = Modifier.testTag(LOGS_MODE_TAG),
-                            onClick = { showFullLogs = !showFullLogs },
-                        ) {
-                            Text(
-                                text = stringResource(
-                                    if (showFullLogs) R.string.logs_show_tail else R.string.logs_show_full,
-                                ),
-                            )
-                        }
+                    }
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(LOGS_MODE_TAG),
+                        onClick = { showFullLogs = !showFullLogs },
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (showFullLogs) R.string.logs_show_tail else R.string.logs_show_full,
+                            ),
+                        )
                     }
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(LogLevelFilter.entries) { filter ->
@@ -108,28 +130,52 @@ fun LogsScreen(
                     }
                 }
             }
-        }
 
-        if (filteredLogs.isEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.logs_empty_state),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+            if (filteredLogs.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.logs_empty_state),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
+            items(
+                items = filteredLogs,
+                key = { line -> "${line.timestamp}-${line.level}-${line.message}" },
+            ) { line ->
+                LogCard(line = line)
             }
         }
+    }
+}
 
-        items(
-            items = filteredLogs,
-            key = { line -> "${line.timestamp}-${line.level}-${line.message}" },
-        ) { line ->
-            val timestamp = line.timestamp.ifBlank { "-" }
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+@Composable
+private fun LogCard(line: LogLine) {
+    val accent = when {
+        line.level.contains("ERROR", ignoreCase = true) -> Color(0xFFFF8E8E)
+        line.level.contains("WARN", ignoreCase = true) -> Color(0xFFFFC980)
+        else -> Color(0xFF4AE3C6)
+    }
+    val timestamp = line.timestamp.ifBlank { "-" }
+
+    VpnCard(modifier = Modifier.fillMaxWidth(), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(accent.copy(alpha = 0.08f))
+                    .padding(14.dp),
+            ) {
                 Text(
                     text = stringResource(R.string.logs_line_format, timestamp, line.level, line.message),
-                    modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }

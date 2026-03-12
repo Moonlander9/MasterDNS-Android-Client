@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -26,6 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.masterdnsvpn.android.MainUiState
 import com.masterdnsvpn.android.R
+import com.masterdnsvpn.android.ui.theme.MetricBadge
+import com.masterdnsvpn.android.ui.theme.SectionTitle
+import com.masterdnsvpn.android.ui.theme.VpnAppBackground
+import com.masterdnsvpn.android.ui.theme.VpnCard
+import com.masterdnsvpn.android.ui.theme.VpnHeroCard
 
 const val CONFIG_SEARCH_TAG = "config_search"
 const val CONFIG_ADVANCED_TOGGLE_TAG = "config_advanced_toggle"
@@ -138,336 +142,381 @@ fun ConfigScreen(
         showDiagnosticsSection ||
         hasAdvancedMatches
 
-    LazyColumn(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                label = { Text(text = stringResource(R.string.config_search_label)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(CONFIG_SEARCH_TAG),
-                singleLine = true,
-            )
-        }
-
-        if (showPolicySection) {
+    VpnAppBackground {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item {
-                SectionCard(title = stringResource(R.string.config_policy_title)) {
-                    ReadOnlySetting(
-                        label = stringResource(R.string.config_protocol_type_label),
-                        value = state.config.protocolType,
+                VpnHeroCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
+                        title = stringResource(R.string.config_hero_title),
+                        subtitle = stringResource(R.string.config_hero_subtitle),
                     )
-                    ReadOnlySetting(
-                        label = stringResource(R.string.config_listen_ip_label),
-                        value = state.config.listenIp,
-                    )
-                    if (showEncryptionMethod) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_encryption_method_label),
-                            value = state.config.dataEncryptionMethod.toString(),
-                            onValueChange = onEncryptionMethodChanged,
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        MetricBadge(
+                            label = stringResource(R.string.config_summary_domains),
+                            value = state.config.domains.size.toString(),
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetricBadge(
+                            label = stringResource(R.string.config_summary_resolvers),
+                            value = state.config.resolverDnsServers.size.toString(),
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetricBadge(
+                            label = stringResource(R.string.config_summary_errors),
+                            value = state.validationErrors.size.toString(),
+                            modifier = Modifier.weight(1f),
                         )
                     }
-                    Text(
-                        text = stringResource(R.string.config_policy_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Text(
-                        text = stringResource(R.string.config_tcp_first_warning),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    Text(
-                        text = stringResource(R.string.config_routing_tab_hint),
-                        style = MaterialTheme.typography.bodySmall,
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        label = { Text(text = stringResource(R.string.config_search_label)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(CONFIG_SEARCH_TAG),
+                        singleLine = true,
                     )
                 }
             }
-        }
 
-        if (showEssentialsSection) {
-            item {
-                SectionCard(title = stringResource(R.string.config_essentials_title)) {
-                    if (showEncryptionKey) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_encryption_key_label),
-                            value = state.config.encryptionKey,
-                            onValueChange = onEncryptionKeyChanged,
+            if (showPolicySection) {
+                item {
+                    SectionCard(
+                        title = stringResource(R.string.config_policy_title),
+                        subtitle = stringResource(R.string.config_policy_subtitle),
+                    ) {
+                        ReadOnlySetting(
+                            label = stringResource(R.string.config_protocol_type_label),
+                            value = state.config.protocolType,
                         )
-                    }
-                    if (showDomains) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_domains_label),
-                            value = state.config.domains.joinToString(","),
-                            onValueChange = onDomainsChanged,
+                        ReadOnlySetting(
+                            label = stringResource(R.string.config_listen_ip_label),
+                            value = state.config.listenIp,
                         )
-                    }
-                    if (showResolvers) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_resolvers_label),
-                            value = state.config.resolverDnsServers.joinToString(","),
-                            onValueChange = onResolversChanged,
-                        )
-                    }
-                }
-            }
-        }
-
-        if (showProxySection) {
-            item {
-                SectionCard(title = stringResource(R.string.config_proxy_title)) {
-                    if (showListenPort) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_listen_port_label),
-                            value = state.config.listenPort.toString(),
-                            onValueChange = onListenPortChanged,
-                        )
-                    }
-                    if (showSocksAuth) {
-                        SettingSwitch(
-                            label = stringResource(R.string.config_socks_auth_label),
-                            checked = state.config.socks5Auth,
-                            onCheckedChange = onSocksAuthChanged,
-                        )
-                    }
-                    if (showSocksUser) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_socks_user_label),
-                            value = state.config.socks5User,
-                            onValueChange = onSocksUserChanged,
-                        )
-                    }
-                    if (showSocksPass) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_socks_pass_label),
-                            value = state.config.socks5Pass,
-                            onValueChange = onSocksPassChanged,
-                        )
-                    }
-                    if (showSocksHandshakeTimeout) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_socks_handshake_timeout_label),
-                            value = state.config.socksHandshakeTimeout.toString(),
-                            onValueChange = onSocksHandshakeTimeoutChanged,
-                        )
-                    }
-                }
-            }
-        }
-
-        if (showCompatibilitySection) {
-            item {
-                SectionCard(title = stringResource(R.string.config_transport_title)) {
-                    if (showBaseEncode) {
-                        SettingSwitch(
-                            label = stringResource(R.string.config_base_encode_label),
-                            checked = state.config.baseEncodeData,
-                            onCheckedChange = onBaseEncodeDataChanged,
-                        )
-                    }
-                    if (showUploadCompression) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_upload_compression_label),
-                            value = state.config.uploadCompressionType.toString(),
-                            onValueChange = onUploadCompressionTypeChanged,
-                        )
-                    }
-                    if (showDownloadCompression) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_download_compression_label),
-                            value = state.config.downloadCompressionType.toString(),
-                            onValueChange = onDownloadCompressionTypeChanged,
-                        )
-                    }
-                    Text(
-                        text = stringResource(R.string.config_transport_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-        }
-
-        if (showDiagnosticsSection) {
-            item {
-                SectionCard(title = stringResource(R.string.config_diagnostics_title)) {
-                    SettingTextField(
-                        label = stringResource(R.string.config_log_level_label),
-                        value = state.config.logLevel,
-                        onValueChange = onLogLevelChanged,
-                    )
-                }
-            }
-        }
-
-        if (hasAdvancedMatches) {
-            item {
-                Button(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag(CONFIG_ADVANCED_TOGGLE_TAG),
-                    onClick = { showAdvanced = !showAdvanced },
-                ) {
-                    Text(
-                        text = stringResource(
-                            if (showAdvanced) R.string.config_hide_advanced else R.string.config_show_advanced,
-                        ),
-                    )
-                }
-            }
-        }
-
-        if (showAdvanced && hasAdvancedMatches) {
-            item {
-                SectionCard(title = stringResource(R.string.config_advanced_title)) {
-                    if (showPacketDuplication) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_packet_duplication_label),
-                            value = state.config.packetDuplicationCount.toString(),
-                            onValueChange = onPacketDuplicationCountChanged,
-                        )
-                    }
-                    if (showMaxBatch) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_max_packets_batch_label),
-                            value = state.config.maxPacketsPerBatch.toString(),
-                            onValueChange = onMaxPacketsPerBatchChanged,
-                        )
-                    }
-                    if (showResolverBalancing) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_resolver_balancing_label),
-                            value = state.config.resolverBalancingStrategy.toString(),
-                            onValueChange = onResolverBalancingStrategyChanged,
-                        )
-                    }
-                    if (showMinUploadMtu) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_min_upload_mtu_label),
-                            value = state.config.minUploadMtu.toString(),
-                            onValueChange = onMinUploadMtuChanged,
-                        )
-                    }
-                    if (showMinDownloadMtu) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_min_download_mtu_label),
-                            value = state.config.minDownloadMtu.toString(),
-                            onValueChange = onMinDownloadMtuChanged,
-                        )
-                    }
-                    if (showMaxUploadMtu) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_max_upload_mtu_label),
-                            value = state.config.maxUploadMtu.toString(),
-                            onValueChange = onMaxUploadMtuChanged,
-                        )
-                    }
-                    if (showMaxDownloadMtu) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_max_download_mtu_label),
-                            value = state.config.maxDownloadMtu.toString(),
-                            onValueChange = onMaxDownloadMtuChanged,
-                        )
-                    }
-                    if (showMtuRetries) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_mtu_retries_label),
-                            value = state.config.mtuTestRetries.toString(),
-                            onValueChange = onMtuTestRetriesChanged,
-                        )
-                    }
-                    if (showMtuTimeout) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_mtu_timeout_label),
-                            value = state.config.mtuTestTimeout.toString(),
-                            onValueChange = onMtuTestTimeoutChanged,
-                        )
-                    }
-                    if (showConnectionAttempts) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_connection_attempts_label),
-                            value = state.config.maxConnectionAttempts.toString(),
-                            onValueChange = onMaxConnectionAttemptsChanged,
-                        )
-                    }
-                    if (showArqWindow) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_arq_window_label),
-                            value = state.config.arqWindowSize.toString(),
-                            onValueChange = onArqWindowSizeChanged,
-                        )
-                    }
-                    if (showArqInitialRto) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_arq_initial_rto_label),
-                            value = state.config.arqInitialRto.toString(),
-                            onValueChange = onArqInitialRtoChanged,
-                        )
-                    }
-                    if (showArqMaxRto) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_arq_max_rto_label),
-                            value = state.config.arqMaxRto.toString(),
-                            onValueChange = onArqMaxRtoChanged,
-                        )
-                    }
-                    if (showDnsQueryTimeout) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_dns_query_timeout_label),
-                            value = state.config.dnsQueryTimeout.toString(),
-                            onValueChange = onDnsQueryTimeoutChanged,
-                        )
-                    }
-                    if (showRxWorkers) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_rx_workers_label),
-                            value = state.config.numRxWorkers.toString(),
-                            onValueChange = onNumRxWorkersChanged,
-                        )
-                    }
-                    if (showDnsWorkers) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_dns_workers_label),
-                            value = state.config.numDnsWorkers.toString(),
-                            onValueChange = onNumDnsWorkersChanged,
-                        )
-                    }
-                    if (showSocketBuffer) {
-                        SettingTextField(
-                            label = stringResource(R.string.config_socket_buffer_label),
-                            value = state.config.socketBufferSize.toString(),
-                            onValueChange = onSocketBufferSizeChanged,
-                        )
-                    }
-                }
-            }
-        }
-
-        if (state.validationErrors.isNotEmpty()) {
-            item {
-                SectionCard(title = stringResource(R.string.config_validation_errors_title)) {
-                    state.validationErrors.forEach { error ->
+                        if (showEncryptionMethod) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_encryption_method_label),
+                                value = state.config.dataEncryptionMethod.toString(),
+                                onValueChange = onEncryptionMethodChanged,
+                            )
+                        }
                         Text(
-                            text = "- $error",
+                            text = stringResource(R.string.config_policy_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = stringResource(R.string.config_tcp_first_warning),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
+                        Text(
+                            text = stringResource(R.string.config_routing_tab_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
-        }
 
-        if (!hasAnyMatch) {
-            item {
-                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = stringResource(R.string.config_no_matches),
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+            if (showEssentialsSection) {
+                item {
+                    SectionCard(
+                        title = stringResource(R.string.config_essentials_title),
+                        subtitle = stringResource(R.string.config_essentials_subtitle),
+                    ) {
+                        if (showEncryptionKey) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_encryption_key_label),
+                                value = state.config.encryptionKey,
+                                onValueChange = onEncryptionKeyChanged,
+                            )
+                        }
+                        if (showDomains) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_domains_label),
+                                value = state.config.domains.joinToString(","),
+                                onValueChange = onDomainsChanged,
+                            )
+                        }
+                        if (showResolvers) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_resolvers_label),
+                                value = state.config.resolverDnsServers.joinToString(","),
+                                onValueChange = onResolversChanged,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (showProxySection) {
+                item {
+                    SectionCard(
+                        title = stringResource(R.string.config_proxy_title),
+                        subtitle = stringResource(R.string.config_proxy_subtitle),
+                    ) {
+                        if (showListenPort) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_listen_port_label),
+                                value = state.config.listenPort.toString(),
+                                onValueChange = onListenPortChanged,
+                            )
+                        }
+                        if (showSocksAuth) {
+                            SettingSwitch(
+                                label = stringResource(R.string.config_socks_auth_label),
+                                checked = state.config.socks5Auth,
+                                onCheckedChange = onSocksAuthChanged,
+                            )
+                        }
+                        if (showSocksUser) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_socks_user_label),
+                                value = state.config.socks5User,
+                                onValueChange = onSocksUserChanged,
+                            )
+                        }
+                        if (showSocksPass) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_socks_pass_label),
+                                value = state.config.socks5Pass,
+                                onValueChange = onSocksPassChanged,
+                            )
+                        }
+                        if (showSocksHandshakeTimeout) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_socks_handshake_timeout_label),
+                                value = state.config.socksHandshakeTimeout.toString(),
+                                onValueChange = onSocksHandshakeTimeoutChanged,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (showCompatibilitySection) {
+                item {
+                    SectionCard(
+                        title = stringResource(R.string.config_transport_title),
+                        subtitle = stringResource(R.string.config_transport_subtitle),
+                    ) {
+                        if (showBaseEncode) {
+                            SettingSwitch(
+                                label = stringResource(R.string.config_base_encode_label),
+                                checked = state.config.baseEncodeData,
+                                onCheckedChange = onBaseEncodeDataChanged,
+                            )
+                        }
+                        if (showUploadCompression) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_upload_compression_label),
+                                value = state.config.uploadCompressionType.toString(),
+                                onValueChange = onUploadCompressionTypeChanged,
+                            )
+                        }
+                        if (showDownloadCompression) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_download_compression_label),
+                                value = state.config.downloadCompressionType.toString(),
+                                onValueChange = onDownloadCompressionTypeChanged,
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.config_transport_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            if (showDiagnosticsSection) {
+                item {
+                    SectionCard(
+                        title = stringResource(R.string.config_diagnostics_title),
+                        subtitle = stringResource(R.string.config_diagnostics_subtitle),
+                    ) {
+                        SettingTextField(
+                            label = stringResource(R.string.config_log_level_label),
+                            value = state.config.logLevel,
+                            onValueChange = onLogLevelChanged,
+                        )
+                    }
+                }
+            }
+
+            if (hasAdvancedMatches) {
+                item {
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(CONFIG_ADVANCED_TOGGLE_TAG),
+                        onClick = { showAdvanced = !showAdvanced },
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (showAdvanced) R.string.config_hide_advanced else R.string.config_show_advanced,
+                            ),
+                        )
+                    }
+                }
+            }
+
+            if (showAdvanced && hasAdvancedMatches) {
+                item {
+                    SectionCard(
+                        title = stringResource(R.string.config_advanced_title),
+                        subtitle = stringResource(R.string.config_advanced_subtitle),
+                    ) {
+                        if (showPacketDuplication) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_packet_duplication_label),
+                                value = state.config.packetDuplicationCount.toString(),
+                                onValueChange = onPacketDuplicationCountChanged,
+                            )
+                        }
+                        if (showMaxBatch) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_max_packets_batch_label),
+                                value = state.config.maxPacketsPerBatch.toString(),
+                                onValueChange = onMaxPacketsPerBatchChanged,
+                            )
+                        }
+                        if (showResolverBalancing) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_resolver_balancing_label),
+                                value = state.config.resolverBalancingStrategy.toString(),
+                                onValueChange = onResolverBalancingStrategyChanged,
+                            )
+                        }
+                        if (showMinUploadMtu) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_min_upload_mtu_label),
+                                value = state.config.minUploadMtu.toString(),
+                                onValueChange = onMinUploadMtuChanged,
+                            )
+                        }
+                        if (showMinDownloadMtu) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_min_download_mtu_label),
+                                value = state.config.minDownloadMtu.toString(),
+                                onValueChange = onMinDownloadMtuChanged,
+                            )
+                        }
+                        if (showMaxUploadMtu) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_max_upload_mtu_label),
+                                value = state.config.maxUploadMtu.toString(),
+                                onValueChange = onMaxUploadMtuChanged,
+                            )
+                        }
+                        if (showMaxDownloadMtu) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_max_download_mtu_label),
+                                value = state.config.maxDownloadMtu.toString(),
+                                onValueChange = onMaxDownloadMtuChanged,
+                            )
+                        }
+                        if (showMtuRetries) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_mtu_retries_label),
+                                value = state.config.mtuTestRetries.toString(),
+                                onValueChange = onMtuTestRetriesChanged,
+                            )
+                        }
+                        if (showMtuTimeout) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_mtu_timeout_label),
+                                value = state.config.mtuTestTimeout.toString(),
+                                onValueChange = onMtuTestTimeoutChanged,
+                            )
+                        }
+                        if (showConnectionAttempts) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_connection_attempts_label),
+                                value = state.config.maxConnectionAttempts.toString(),
+                                onValueChange = onMaxConnectionAttemptsChanged,
+                            )
+                        }
+                        if (showArqWindow) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_arq_window_label),
+                                value = state.config.arqWindowSize.toString(),
+                                onValueChange = onArqWindowSizeChanged,
+                            )
+                        }
+                        if (showArqInitialRto) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_arq_initial_rto_label),
+                                value = state.config.arqInitialRto.toString(),
+                                onValueChange = onArqInitialRtoChanged,
+                            )
+                        }
+                        if (showArqMaxRto) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_arq_max_rto_label),
+                                value = state.config.arqMaxRto.toString(),
+                                onValueChange = onArqMaxRtoChanged,
+                            )
+                        }
+                        if (showDnsQueryTimeout) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_dns_query_timeout_label),
+                                value = state.config.dnsQueryTimeout.toString(),
+                                onValueChange = onDnsQueryTimeoutChanged,
+                            )
+                        }
+                        if (showRxWorkers) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_rx_workers_label),
+                                value = state.config.numRxWorkers.toString(),
+                                onValueChange = onNumRxWorkersChanged,
+                            )
+                        }
+                        if (showDnsWorkers) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_dns_workers_label),
+                                value = state.config.numDnsWorkers.toString(),
+                                onValueChange = onNumDnsWorkersChanged,
+                            )
+                        }
+                        if (showSocketBuffer) {
+                            SettingTextField(
+                                label = stringResource(R.string.config_socket_buffer_label),
+                                value = state.config.socketBufferSize.toString(),
+                                onValueChange = onSocketBufferSizeChanged,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (state.validationErrors.isNotEmpty()) {
+                item {
+                    SectionCard(
+                        title = stringResource(R.string.config_validation_errors_title),
+                        subtitle = stringResource(R.string.config_validation_errors_subtitle),
+                    ) {
+                        state.validationErrors.forEach { error ->
+                            Text(
+                                text = "• $error",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (!hasAnyMatch) {
+                item {
+                    VpnCard(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = stringResource(R.string.config_no_matches),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
             }
         }
@@ -477,21 +526,12 @@ fun ConfigScreen(
 @Composable
 private fun SectionCard(
     title: String,
+    subtitle: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            content = {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                content()
-            },
-        )
+    VpnCard(modifier = Modifier.fillMaxWidth()) {
+        SectionTitle(title = title, subtitle = subtitle)
+        content()
     }
 }
 
@@ -518,10 +558,11 @@ private fun ReadOnlySetting(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
         )
     }
@@ -538,7 +579,10 @@ private fun SettingSwitch(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+        )
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
