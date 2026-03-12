@@ -240,12 +240,15 @@ class AndroidClientBridge:
 
                 try:
                     protected = bool(_SOCKET_PROTECTOR.protectFd(int(self.fileno())))
-                except Exception as exc:  # noqa: BLE001
+                except BaseException as exc:  # noqa: BLE001
+                    exc_type = type(exc).__name__
+                    exc_message = str(exc).strip()
+                    details = exc_type if not exc_message else f"{exc_type}: {exc_message}"
                     bridge._push_event(
                         {
                             "type": "log",
                             "level": "WARN",
-                            "message": f"Failed to protect socket from VPN capture: {exc}",
+                            "message": f"Failed to protect socket from VPN capture: {details}",
                         }
                     )
                     return
