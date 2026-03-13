@@ -26,6 +26,17 @@ import com.masterdnsvpn.android.ui.MasterDnsVpnApp
 import com.masterdnsvpn.android.ui.theme.MasterDnsVPNAndroidTheme
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        private val configImportMimeTypes = arrayOf(
+            "application/toml",
+            "text/plain",
+            "text/x-toml",
+            "text/*",
+            "application/octet-stream",
+            "*/*",
+        )
+    }
+
     private val viewModel by viewModels<MainViewModel>()
     private var pendingVpnConfigPath: String? = null
 
@@ -43,7 +54,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+    private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/toml")) { uri ->
         if (uri == null) return@registerForActivityResult
         val output = viewModel.exportToml()
         runCatching {
@@ -134,7 +145,7 @@ class MainActivity : ComponentActivity() {
                         viewModel = viewModel,
                         onConnect = ::startServiceTunnel,
                         onDisconnect = ::stopServiceTunnel,
-                        onImportToml = { importLauncher.launch(arrayOf("text/*")) },
+                        onImportToml = { importLauncher.launch(configImportMimeTypes) },
                         onExportToml = { exportLauncher.launch("client_config.toml") },
                         onCopyProfile = ::copyProfileToClipboard,
                         onImportProfile = ::importProfileFromClipboard,

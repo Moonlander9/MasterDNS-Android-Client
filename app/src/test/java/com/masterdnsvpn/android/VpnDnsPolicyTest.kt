@@ -23,4 +23,10 @@ class VpnDnsPolicyTest {
         val config = ClientConfig(resolverDnsServers = listOf("dns.google", "8.8.8.8", ""))
         assertEquals(listOf("8.8.8.8"), VpnDnsPolicy.dnsServersForVpn(config))
     }
+
+    @Test
+    fun dnsServersForVpn_doesNotSilentlyFallbackWhenOnlyInvalidResolversAreConfigured() {
+        val config = ClientConfig(resolverDnsServers = listOf("dns.google", "resolver.example"))
+        assertEquals(emptyList<String>(), VpnDnsPolicy.dnsServersForVpn(config))
+    }
 }

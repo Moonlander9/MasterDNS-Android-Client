@@ -602,7 +602,48 @@ class MasterDnsVpnService : VpnService() {
             .addRoute("0.0.0.0", 0)
             .addRoute("::", 0)
 
-        VpnDnsPolicy.dnsServersForVpn(config).forEach { dns ->
+        val dnsSelection = VpnDnsPolicy.selectDnsServers(config)
+        if (dnsSelection.servers.isEmpty()) {
+            val invalidResolvers = dnsSelection.invalidConfiguredResolvers.joinToString()
+            return VpnEstablishResult(
+                errorCode = "VPN_DNS_CONFIG_INVALID",
+                errorMessage = if (invalidResolvers.isBlank()) {
+                    "RESOLVER_DNS_SERVERS did not contain any VPN-compatible DNS IPs."
+                } else {
+                    "Configured RESOLVER_DNS_SERVERS are not VPN-compatible IPs: $invalidResolvers"
+                },
+            )
+        }
+
+        if (dnsSelection.invalidConfiguredResolvers.isNotEmpty()) {
+            emitEvent(
+                TunnelEvent(
+                    type = "log",
+                    level = "WARN",
+                    message = "Ignoring non-IP VPN DNS resolvers: ${dnsSelection.invalidConfiguredResolvers.joinToString()}",
+                ),
+            )
+        }
+
+        if (dnsSelection.usedFallback) {
+            emitEvent(
+                TunnelEvent(
+                    type = "log",
+                    level = "WARN",
+                    message = "No RESOLVER_DNS_SERVERS configured. Falling back to ${dnsSelection.servers.joinToString()}",
+                ),
+            )
+        } else {
+            emitEvent(
+                TunnelEvent(
+                    type = "log",
+                    level = "INFO",
+                    message = "Using VPN DNS resolvers: ${dnsSelection.servers.joinToString()}",
+                ),
+            )
+        }
+
+        dnsSelection.servers.forEach { dns ->
             val error = runCatching { builder.addDnsServer(dns) }.exceptionOrNull()
             if (error != null) {
                 return VpnEstablishResult(

@@ -443,31 +443,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.Default) {
             val app = getApplication<Application>()
             val pm = app.packageManager
-            val launcherIntent = Intent(Intent.ACTION_MAIN, null).apply {
-                addCategory(Intent.CATEGORY_LAUNCHER)
-            }
 
             val apps = runCatching {
-                val activities = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    pm.queryIntentActivities(launcherIntent, PackageManager.ResolveInfoFlags.of(0L))
+                val installedApplications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    pm.getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0L))
                 } else {
                     @Suppress("DEPRECATION")
-                    pm.queryIntentActivities(launcherIntent, 0)
+                    pm.getInstalledApplications(0)
                 }
 
-                activities
-                    .mapNotNull { resolveInfo ->
-                        val activityInfo = resolveInfo.activityInfo ?: return@mapNotNull null
-                        val packageName = activityInfo.packageName ?: return@mapNotNull null
+                installedApplications
+                    .asSequence()
+                    .filter { it.enabled }
+                    .mapNotNull { appInfo ->
+                        val packageName = appInfo.packageName ?: return@mapNotNull null
                         if (packageName == app.packageName) {
                             return@mapNotNull null
                         }
-                        val label = runCatching { resolveInfo.loadLabel(pm).toString() }
+                        val label = runCatching { appInfo.loadLabel(pm).toString() }
                             .getOrDefault(packageName)
                         InstalledAppInfo(packageName = packageName, label = label)
                     }
                     .distinctBy { it.packageName }
                     .sortedWith(compareBy({ it.label.lowercase() }, { it.packageName }))
+                    .toList()
             }.getOrDefault(emptyList())
 
             _uiState.update { current ->
