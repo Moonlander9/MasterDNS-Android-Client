@@ -47,6 +47,8 @@ data class ScannerConfig(
     val concurrency: Int = 120,
     val proxyTestEnabled: Boolean = false,
     val slipstreamBinaryPath: String = "",
+    val remoteProfileServer: String = "",
+    val remoteProfileName: String = "",
 )
 
 data class SecurityInfo(

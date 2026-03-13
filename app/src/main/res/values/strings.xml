@@ -157,6 +157,10 @@
     <string name="scanner_select_cidr">Select CIDR File</string>
     <string name="scanner_domain_label">Scan Domain</string>
     <string name="scanner_concurrency_label">Scanner Concurrency</string>
+    <string name="scanner_remote_profile_title">Remote Profile</string>
+    <string name="scanner_remote_profile_server_label">Server IP or IP:Port</string>
+    <string name="scanner_remote_profile_name_label">Profile Name</string>
+    <string name="scanner_remote_profile_fetch">Fetch and Apply</string>
     <string name="scanner_record_type_title">Record Type</string>
     <string name="scanner_preset_title">Scan Preset</string>
     <string name="scanner_random_subdomain_label">Random Subdomain</string>
@@ -225,6 +229,7 @@
     <string name="toast_clipboard_empty">Clipboard is empty</string>
     <string name="toast_profile_imported">Profile imported from clipboard</string>
     <string name="toast_profile_invalid">Invalid profile string (MDVPN3 required)</string>
+    <string name="toast_remote_profile_applied">Remote profile applied</string>
     <string name="toast_logs_exported">Diagnostics exported</string>
     <string name="toast_logs_export_failed">Failed to export diagnostics: %1$s</string>
 

@@ -27,6 +27,8 @@ class ScannerConfigStore(
                 concurrency = json.optInt("concurrency", 120).coerceAtLeast(1),
                 proxyTestEnabled = json.optBoolean("proxyTestEnabled", false),
                 slipstreamBinaryPath = json.optString("slipstreamBinaryPath", ""),
+                remoteProfileServer = json.optString("remoteProfileServer", ""),
+                remoteProfileName = json.optString("remoteProfileName", ""),
             )
         }.map { loaded ->
             loaded.copy(
@@ -47,6 +49,8 @@ class ScannerConfigStore(
             put("concurrency", config.concurrency)
             put("proxyTestEnabled", config.proxyTestEnabled)
             put("slipstreamBinaryPath", config.slipstreamBinaryPath)
+            put("remoteProfileServer", config.remoteProfileServer)
+            put("remoteProfileName", config.remoteProfileName)
         }
         prefs.edit().putString(KEY_CONFIG_JSON, json.toString()).apply()
     }

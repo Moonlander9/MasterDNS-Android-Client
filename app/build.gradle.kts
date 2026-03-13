@@ -19,17 +19,24 @@ fun resolveBuildProperty(name: String): String? {
     return releaseProperties.getProperty(name)?.takeIf { it.isNotBlank() }
 }
 
+fun String.toBuildConfigString(): String {
+    return "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+}
+
 val releaseStoreFilePath = resolveBuildProperty("RELEASE_STORE_FILE")
 val releaseStorePassword = resolveBuildProperty("RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = resolveBuildProperty("RELEASE_KEY_ALIAS")
 val releaseKeyPassword = resolveBuildProperty("RELEASE_KEY_PASSWORD")
+val remoteProfileSharedSecret = resolveBuildProperty("REMOTE_PROFILE_SHARED_SECRET")
+    ?: resolveBuildProperty("REMOTE_PROFILE_ACCESS_KEY")
+    ?: "masterdns-profile-key"
 val hasReleaseSigning = !releaseStoreFilePath.isNullOrBlank() &&
     !releaseStorePassword.isNullOrBlank() &&
     !releaseKeyAlias.isNullOrBlank() &&
     !releaseKeyPassword.isNullOrBlank()
 
-val defaultVersionCode = 5
-val defaultVersionName = "1.0.3"
+val defaultVersionCode = 6
+val defaultVersionName = "1.0.4"
 val appVersionCode = resolveBuildProperty("APP_VERSION_CODE")?.toIntOrNull() ?: defaultVersionCode
 val appVersionName = resolveBuildProperty("APP_VERSION_NAME") ?: defaultVersionName
 
@@ -64,6 +71,7 @@ android {
         targetSdk = 35
         versionCode = appVersionCode
         versionName = appVersionName
+        buildConfigField("String", "REMOTE_PROFILE_SHARED_SECRET", remoteProfileSharedSecret.toBuildConfigString())
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

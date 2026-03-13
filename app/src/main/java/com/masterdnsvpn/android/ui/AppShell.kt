@@ -94,6 +94,7 @@ fun MasterDnsVpnApp(
     onCopyProfile: () -> Unit,
     onImportProfile: () -> Unit,
     onPickScannerCidr: () -> Unit,
+    onFetchScannerRemoteProfile: () -> Unit,
     onExportLogs: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -223,6 +224,9 @@ fun MasterDnsVpnApp(
                     onScannerConcurrencyChanged = viewModel::updateScannerConcurrency,
                     onScannerProxyEnabledChanged = viewModel::updateScannerProxyEnabled,
                     onScannerSlipstreamPathChanged = viewModel::updateScannerSlipstreamPath,
+                    onScannerRemoteServerChanged = viewModel::updateScannerRemoteProfileServer,
+                    onScannerRemoteNameChanged = viewModel::updateScannerRemoteProfileName,
+                    onScannerFetchRemoteProfile = onFetchScannerRemoteProfile,
                     onScannerStart = viewModel::startScannerScan,
                     onScannerPause = viewModel::pauseScannerScan,
                     onScannerResume = viewModel::resumeScannerScan,

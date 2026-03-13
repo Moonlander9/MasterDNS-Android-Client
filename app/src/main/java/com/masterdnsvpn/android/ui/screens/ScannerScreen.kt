@@ -51,6 +51,9 @@ fun ScannerScreen(
     onScannerConcurrencyChanged: (String) -> Unit,
     onScannerProxyEnabledChanged: (Boolean) -> Unit,
     onScannerSlipstreamPathChanged: (String) -> Unit,
+    onScannerRemoteServerChanged: (String) -> Unit,
+    onScannerRemoteNameChanged: (String) -> Unit,
+    onScannerFetchRemoteProfile: () -> Unit,
     onScannerStart: () -> Unit,
     onScannerPause: () -> Unit,
     onScannerResume: () -> Unit,
@@ -134,6 +137,28 @@ fun ScannerScreen(
                         label = { Text(text = stringResource(R.string.scanner_concurrency_label)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    Text(
+                        text = stringResource(R.string.scanner_remote_profile_title),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    OutlinedTextField(
+                        value = scannerConfig.remoteProfileServer,
+                        onValueChange = onScannerRemoteServerChanged,
+                        label = { Text(text = stringResource(R.string.scanner_remote_profile_server_label)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = scannerConfig.remoteProfileName,
+                        onValueChange = onScannerRemoteNameChanged,
+                        label = { Text(text = stringResource(R.string.scanner_remote_profile_name_label)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Button(
+                        onClick = onScannerFetchRemoteProfile,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(text = stringResource(R.string.scanner_remote_profile_fetch))
+                    }
                     Text(
                         text = stringResource(R.string.scanner_record_type_title),
                         style = MaterialTheme.typography.labelLarge,

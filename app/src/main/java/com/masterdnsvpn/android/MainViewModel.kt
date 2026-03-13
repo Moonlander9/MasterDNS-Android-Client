@@ -293,6 +293,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateScannerSlipstreamPath(value: String) = mutateScannerConfig { copy(slipstreamBinaryPath = value.trim()) }
 
+    fun updateScannerRemoteProfileServer(value: String) = mutateScannerConfig {
+        copy(remoteProfileServer = value.trim())
+    }
+
+    fun updateScannerRemoteProfileName(value: String) = mutateScannerConfig {
+        copy(remoteProfileName = value.trim())
+    }
+
     fun updateScannerCidr(uri: String, label: String) = mutateScannerConfig {
         copy(cidrUri = uri, cidrLabel = label)
     }
@@ -381,6 +389,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun applyScannerDnsToTunnel(dnsIp: String) {
         mutateConfig {
             copy(resolverDnsServers = listOf(dnsIp))
+        }
+    }
+
+    fun importTomlIfValid(content: String): Result<ClientConfig> {
+        return runCatching {
+            val decoded = normalizeConfig(TomlCodec.decode(content))
+            val errors = decoded.validateForAndroidV1()
+            if (errors.isNotEmpty()) {
+                throw IllegalArgumentException(errors.joinToString("\n"))
+            }
+            _uiState.value = _uiState.value.copy(
+                config = decoded,
+                validationErrors = emptyList(),
+            )
+            configStore.save(decoded)
+            decoded
         }
     }
 
