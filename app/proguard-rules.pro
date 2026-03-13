@@ -21,3 +21,6 @@
 
 # JNI bridge symbols are looked up by class/method name from native code.
 -keep class com.masterdnsvpn.android.HevNativeBridge { *; }
+
+# Chaquopy resolves this class by its exact JVM name from Python.
+-keep class com.masterdnsvpn.android.VpnSocketProtector { *; }

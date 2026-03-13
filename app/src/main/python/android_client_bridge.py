@@ -43,9 +43,31 @@ _RUNTIME_DIR_NAME = "masterdnsvpn-python-runtime"
 _CONFIG_FILENAME = "client_config.toml"
 _VALID_ENCRYPTION_METHODS = {1, 2, 3, 4, 5}
 _VALID_COMPRESSION_TYPES = {0, 1, 2, 3}
-_SOCKET_PROTECTOR = (
-    jclass("com.masterdnsvpn.android.VpnSocketProtector") if jclass is not None else None
-)
+_SOCKET_PROTECTOR = None
+_SOCKET_PROTECTOR_LOOKUP_ERROR: Optional[str] = None
+
+
+def _resolve_socket_protector():
+    global _SOCKET_PROTECTOR
+    global _SOCKET_PROTECTOR_LOOKUP_ERROR
+
+    if _SOCKET_PROTECTOR is not None:
+        return _SOCKET_PROTECTOR
+    if _SOCKET_PROTECTOR_LOOKUP_ERROR is not None:
+        return None
+    if jclass is None:
+        _SOCKET_PROTECTOR_LOOKUP_ERROR = "java.jclass unavailable"
+        return None
+
+    try:
+        _SOCKET_PROTECTOR = jclass("com.masterdnsvpn.android.VpnSocketProtector")
+    except BaseException as exc:  # noqa: BLE001
+        exc_type = type(exc).__name__
+        exc_message = str(exc).strip()
+        _SOCKET_PROTECTOR_LOOKUP_ERROR = exc_type if not exc_message else f"{exc_type}: {exc_message}"
+        return None
+
+    return _SOCKET_PROTECTOR
 
 
 class AndroidClientBridge:
@@ -216,7 +238,19 @@ class AndroidClientBridge:
 
     @contextmanager
     def _patched_socket_protection(self):
-        if _SOCKET_PROTECTOR is None:
+        protector = _resolve_socket_protector()
+        if protector is None:
+            if _SOCKET_PROTECTOR_LOOKUP_ERROR is not None:
+                self._push_event(
+                    {
+                        "type": "log",
+                        "level": "WARN",
+                        "message": (
+                            "Socket protector unavailable; "
+                            f"VPN socket bypass disabled: {_SOCKET_PROTECTOR_LOOKUP_ERROR}"
+                        ),
+                    }
+                )
             yield
             return
 
@@ -239,7 +273,7 @@ class AndroidClientBridge:
                     return
 
                 try:
-                    protected = bool(_SOCKET_PROTECTOR.protectFd(int(self.fileno())))
+                    protected = bool(protector.protectFd(int(self.fileno())))
                 except BaseException as exc:  # noqa: BLE001
                     exc_type = type(exc).__name__
                     exc_message = str(exc).strip()
