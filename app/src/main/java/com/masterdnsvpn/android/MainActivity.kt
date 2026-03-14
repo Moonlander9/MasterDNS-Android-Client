@@ -28,8 +28,12 @@ import com.masterdnsvpn.android.ui.theme.MasterDnsVPNAndroidTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.MalformedURLException
+import java.net.URI
 import java.net.URL
+import java.net.URLEncoder
 import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -309,18 +313,26 @@ class MainActivity : ComponentActivity() {
     private fun fetchScannerRemoteProfile() {
         val scannerConfig = viewModel.uiState.value.scannerConfig
         if (scannerConfig.remoteProfileServer.isBlank() || scannerConfig.remoteProfileName.isBlank()) {
+            toast(getString(R.string.toast_remote_profile_missing_fields))
             return
         }
 
         lifecycleScope.launch {
-            val toml = withContext(Dispatchers.IO) {
+            val downloadResult = withContext(Dispatchers.IO) {
                 downloadRemoteProfile(
                     server = scannerConfig.remoteProfileServer,
                     profileName = scannerConfig.remoteProfileName,
                 )
-            } ?: return@launch
+            }
+            val toml = downloadResult.getOrElse {
+                reportRemoteProfileFailure(it, code = "REMOTE_PROFILE_DOWNLOAD_ERROR")
+                return@launch
+            }
 
-            viewModel.importTomlIfValid(toml).getOrNull() ?: return@launch
+            viewModel.importTomlIfValid(toml).getOrElse {
+                reportRemoteProfileFailure(it, code = "REMOTE_PROFILE_IMPORT_ERROR")
+                return@launch
+            }
             val configPath = viewModel.persistConfig(this@MainActivity).getOrNull() ?: return@launch
 
             toast(getString(R.string.toast_remote_profile_applied))
@@ -333,29 +345,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun downloadRemoteProfile(server: String, profileName: String): String? {
-        val normalizedServer = server.trim()
-            .removePrefix("http://")
-            .removePrefix("https://")
-            .trimEnd('/')
-        if (normalizedServer.isBlank()) {
-            return null
+    private fun downloadRemoteProfile(server: String, profileName: String): Result<String> {
+        val request = buildRemoteProfileRequest(server, profileName).getOrElse {
+            return Result.failure(it)
         }
-
-        val encodedProfileName = Uri.encode(profileName.trim())
-        val requestPath = "/$encodedProfileName"
         val timestamp = (System.currentTimeMillis() / 1000L).toString()
         val nonce = UUID.randomUUID().toString()
         val signature = buildRemoteProfileSignature(
             method = "GET",
-            path = requestPath,
+            path = request.path,
             timestamp = timestamp,
             nonce = nonce,
             secret = BuildConfig.REMOTE_PROFILE_SHARED_SECRET,
-        ) ?: return null
+        ) ?: return Result.failure(IllegalStateException("Unable to sign remote profile request"))
 
-        val url = URL("http://$normalizedServer$requestPath")
-        val connection = (url.openConnection() as? HttpURLConnection) ?: return null
+        val connection = (request.url.openConnection() as? HttpURLConnection)
+            ?: return Result.failure(IOException("Unable to open remote profile connection"))
         return runCatching {
             connection.requestMethod = "GET"
             connection.connectTimeout = 5_000
@@ -367,15 +372,30 @@ class MainActivity : ComponentActivity() {
 
             val responseCode = connection.responseCode
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                return@runCatching null
+                throw IOException("Remote server returned HTTP $responseCode")
             }
 
             connection.inputStream.bufferedReader().use { reader ->
                 reader.readText().takeIf { it.isNotBlank() }
+                    ?: throw IOException("Remote server returned an empty profile")
             }
-        }.getOrNull().also {
+        }.also {
             connection.disconnect()
         }
+    }
+
+    private fun reportRemoteProfileFailure(error: Throwable, code: String) {
+        val message = error.message?.takeIf { it.isNotBlank() } ?: "unknown"
+        viewModel.onTunnelEvent(
+            TunnelEvent(
+                type = "status",
+                status = TunnelStatus.ERROR,
+                level = "ERROR",
+                message = getString(R.string.error_remote_profile_failed, message),
+                code = code,
+            ),
+        )
+        toast(getString(R.string.toast_remote_profile_fetch_failed, message))
     }
 
     private fun toast(message: String) {
@@ -414,6 +434,48 @@ private fun buildRemoteProfileSignature(
 
 private fun ByteArray.toHexString(): String {
     return joinToString(separator = "") { byte -> "%02x".format(byte) }
+}
+
+internal data class RemoteProfileRequest(
+    val url: URL,
+    val path: String,
+)
+
+internal fun buildRemoteProfileRequest(server: String, profileName: String): Result<RemoteProfileRequest> {
+    return runCatching {
+        val trimmedServer = server.trim()
+        require(trimmedServer.isNotBlank()) { "Server address is required" }
+
+        val rawAddress = if ("://" in trimmedServer) trimmedServer else "http://$trimmedServer"
+        val uri = URI(rawAddress)
+        val scheme = uri.scheme?.lowercase()?.takeIf { it == "http" || it == "https" }
+            ?: throw IllegalArgumentException("Server must use http:// or https://")
+        val authority = uri.rawAuthority?.takeIf { it.isNotBlank() && uri.host != null }
+            ?: throw IllegalArgumentException("Invalid server address")
+        require(uri.rawQuery.isNullOrBlank() && uri.rawFragment.isNullOrBlank()) {
+            "Server address must not include a query or fragment"
+        }
+
+        val encodedProfileName = encodePathSegment(profileName.trim())
+        require(encodedProfileName.isNotBlank()) { "Profile name is required" }
+
+        val basePath = (uri.rawPath ?: "").trimEnd('/')
+        val requestPath = if (basePath.isBlank()) "/$encodedProfileName" else "$basePath/$encodedProfileName"
+
+        RemoteProfileRequest(
+            url = URL("$scheme://$authority$requestPath"),
+            path = requestPath,
+        )
+    }.recoverCatching { error ->
+        when (error) {
+            is MalformedURLException -> throw IllegalArgumentException("Invalid server address", error)
+            else -> throw error
+        }
+    }
+}
+
+internal fun encodePathSegment(value: String): String {
+    return URLEncoder.encode(value, Charsets.UTF_8).replace("+", "%20")
 }
 
 private fun TunnelStatus.requiresTunnelRestart(): Boolean {

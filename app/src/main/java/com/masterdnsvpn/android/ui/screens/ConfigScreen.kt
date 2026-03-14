@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -33,6 +36,17 @@ import com.masterdnsvpn.android.ui.theme.VpnHeroCard
 
 const val CONFIG_SEARCH_TAG = "config_search"
 const val CONFIG_ADVANCED_TOGGLE_TAG = "config_advanced_toggle"
+
+private enum class ConfigSection(val titleRes: Int) {
+    ALL(R.string.config_section_all),
+    POLICY(R.string.config_policy_title),
+    ESSENTIALS(R.string.config_essentials_title),
+    PROXY(R.string.config_proxy_title),
+    TRANSPORT(R.string.config_transport_title),
+    DIAGNOSTICS(R.string.config_diagnostics_title),
+    ADVANCED(R.string.config_advanced_title),
+    ERRORS(R.string.config_validation_errors_title),
+}
 
 @Composable
 fun ConfigScreen(
@@ -70,6 +84,7 @@ fun ConfigScreen(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var showAdvanced by rememberSaveable { mutableStateOf(false) }
+    var selectedSection by rememberSaveable { mutableStateOf(ConfigSection.ALL) }
     val normalizedQuery = query.trim().lowercase()
 
     fun matches(vararg terms: String): Boolean {
@@ -77,7 +92,12 @@ fun ConfigScreen(
         return terms.any { it.lowercase().contains(normalizedQuery) }
     }
 
-    val showPolicySection = matches("policy", "protocol", "data encryption", "listen ip", "socks5")
+    fun matchesSection(section: ConfigSection): Boolean {
+        return selectedSection == ConfigSection.ALL || selectedSection == section
+    }
+
+    val showPolicySection = matchesSection(ConfigSection.POLICY) &&
+        matches("policy", "protocol", "data encryption", "listen ip", "socks5")
     val showEncryptionMethod = matches("encryption method", "DATA_ENCRYPTION_METHOD")
     val showEncryptionKey = matches("encryption", "key", "ENCRYPTION_KEY")
     val showDomains = matches("domains", "DOMAINS")
@@ -92,10 +112,13 @@ fun ConfigScreen(
     val showUploadCompression = matches("upload compression", "UPLOAD_COMPRESSION_TYPE")
     val showDownloadCompression = matches("download compression", "DOWNLOAD_COMPRESSION_TYPE")
 
-    val showEssentialsSection = showEncryptionKey || showDomains || showResolvers
-    val showProxySection = showListenPort || showSocksAuth || showSocksUser || showSocksPass || showSocksHandshakeTimeout
-    val showCompatibilitySection = showBaseEncode || showUploadCompression || showDownloadCompression
-    val showDiagnosticsSection = showLogLevel
+    val showEssentialsSection = matchesSection(ConfigSection.ESSENTIALS) &&
+        (showEncryptionKey || showDomains || showResolvers)
+    val showProxySection = matchesSection(ConfigSection.PROXY) &&
+        (showListenPort || showSocksAuth || showSocksUser || showSocksPass || showSocksHandshakeTimeout)
+    val showCompatibilitySection = matchesSection(ConfigSection.TRANSPORT) &&
+        (showBaseEncode || showUploadCompression || showDownloadCompression)
+    val showDiagnosticsSection = matchesSection(ConfigSection.DIAGNOSTICS) && showLogLevel
 
     val showPacketDuplication = matches("packet", "duplication", "PACKET_DUPLICATION_COUNT")
     val showMaxBatch = matches("packets", "batch", "MAX_PACKETS_PER_BATCH")
@@ -115,7 +138,7 @@ fun ConfigScreen(
     val showDnsWorkers = matches("dns", "workers", "NUM_DNS_WORKERS")
     val showSocketBuffer = matches("socket", "buffer", "SOCKET_BUFFER_SIZE")
 
-    val hasAdvancedMatches = listOf(
+    val advancedOptionMatch = listOf(
         showPacketDuplication,
         showMaxBatch,
         showResolverBalancing,
@@ -134,13 +157,19 @@ fun ConfigScreen(
         showDnsWorkers,
         showSocketBuffer,
     ).any { it }
+    val hasAdvancedMatches = matchesSection(ConfigSection.ADVANCED) && advancedOptionMatch
+    val showValidationSection = state.validationErrors.isNotEmpty() &&
+        matchesSection(ConfigSection.ERRORS) &&
+        matches("validation", "error")
+    val advancedExpanded = showAdvanced || (selectedSection == ConfigSection.ADVANCED && advancedOptionMatch)
 
     val hasAnyMatch = showPolicySection ||
         showEssentialsSection ||
         showProxySection ||
         showCompatibilitySection ||
         showDiagnosticsSection ||
-        hasAdvancedMatches
+        hasAdvancedMatches ||
+        showValidationSection
 
     VpnAppBackground {
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -176,6 +205,20 @@ fun ConfigScreen(
                             .testTag(CONFIG_SEARCH_TAG),
                         singleLine = true,
                     )
+                    Text(
+                        text = stringResource(R.string.config_sections_label),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(ConfigSection.entries) { section ->
+                            FilterChip(
+                                selected = section == selectedSection,
+                                onClick = { selectedSection = section },
+                                label = { Text(text = stringResource(section.titleRes)) },
+                            )
+                        }
+                    }
                 }
             }
 
@@ -352,18 +395,22 @@ fun ConfigScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag(CONFIG_ADVANCED_TOGGLE_TAG),
-                        onClick = { showAdvanced = !showAdvanced },
+                        onClick = { showAdvanced = !advancedExpanded },
                     ) {
                         Text(
                             text = stringResource(
-                                if (showAdvanced) R.string.config_hide_advanced else R.string.config_show_advanced,
+                                if (advancedExpanded) {
+                                    R.string.config_hide_advanced
+                                } else {
+                                    R.string.config_show_advanced
+                                },
                             ),
                         )
                     }
                 }
             }
 
-            if (showAdvanced && hasAdvancedMatches) {
+            if (advancedExpanded && hasAdvancedMatches) {
                 item {
                     SectionCard(
                         title = stringResource(R.string.config_advanced_title),
@@ -492,7 +539,7 @@ fun ConfigScreen(
                 }
             }
 
-            if (state.validationErrors.isNotEmpty()) {
+            if (showValidationSection) {
                 item {
                     SectionCard(
                         title = stringResource(R.string.config_validation_errors_title),

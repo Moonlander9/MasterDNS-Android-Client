@@ -1,6 +1,7 @@
 package com.masterdnsvpn.android.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +57,9 @@ fun HomeScreen(
     onImportProfile: () -> Unit,
     onExportProfileQr: () -> String,
     onOpenConfig: () -> Unit,
+    onOpenRouting: () -> Unit,
+    onOpenScanner: () -> Unit,
+    onOpenLogs: () -> Unit,
 ) {
     var qrProfilePayload by remember { mutableStateOf<String?>(null) }
     val primaryActionIsDisconnect = state.status in setOf(
@@ -192,6 +196,31 @@ fun HomeScreen(
             item {
                 VpnCard(modifier = Modifier.fillMaxWidth()) {
                     SectionTitle(
+                        title = stringResource(R.string.home_navigation_title),
+                        subtitle = stringResource(R.string.home_navigation_subtitle),
+                    )
+                    NavigationShortcutRow(
+                        leftTitle = stringResource(R.string.tab_config),
+                        leftSubtitle = stringResource(R.string.home_navigation_config),
+                        leftAction = onOpenConfig,
+                        rightTitle = stringResource(R.string.tab_routing),
+                        rightSubtitle = stringResource(R.string.home_navigation_routing),
+                        rightAction = onOpenRouting,
+                    )
+                    NavigationShortcutRow(
+                        leftTitle = stringResource(R.string.tab_scanner),
+                        leftSubtitle = stringResource(R.string.home_navigation_scanner),
+                        leftAction = onOpenScanner,
+                        rightTitle = stringResource(R.string.tab_logs),
+                        rightSubtitle = stringResource(R.string.home_navigation_logs, state.logs.size),
+                        rightAction = onOpenLogs,
+                    )
+                }
+            }
+
+            item {
+                VpnCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle(
                         title = stringResource(R.string.home_quick_actions),
                         subtitle = stringResource(R.string.home_quick_actions_subtitle),
                     )
@@ -271,6 +300,55 @@ private fun QuickActionRow(
         ) {
             Text(text = rightLabel, textAlign = TextAlign.Center)
         }
+    }
+}
+
+@Composable
+private fun NavigationShortcutRow(
+    leftTitle: String,
+    leftSubtitle: String,
+    leftAction: () -> Unit,
+    rightTitle: String,
+    rightSubtitle: String,
+    rightAction: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        NavigationShortcutTile(
+            title = leftTitle,
+            subtitle = leftSubtitle,
+            onClick = leftAction,
+            modifier = Modifier.weight(1f),
+        )
+        NavigationShortcutTile(
+            title = rightTitle,
+            subtitle = rightSubtitle,
+            onClick = rightAction,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun NavigationShortcutTile(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    VpnCard(
+        modifier = modifier.clickable(onClick = onClick),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

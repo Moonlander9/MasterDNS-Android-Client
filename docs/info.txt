@@ -1,0 +1,55 @@
+
+On the VPS, use this layout:
+
+  /opt/masterdns-profile-server/
+    server.py
+    configs/
+      jack.toml
+
+  Setup steps:
+
+  1. Copy server.py to /opt/masterdns-profile-server/server.py
+  2. Create the config folder:
+
+  mkdir -p /opt/masterdns-profile-server/configs
+
+  3. Put profiles there, for example:
+
+  /opt/masterdns-profile-server/configs/jack.toml
+
+  4. Test it manually first:
+
+  cd /opt/masterdns-profile-server
+  python3 server.py
+
+  5. Copy the service file to systemd:
+
+  cp /opt/masterdns-profile-server/masterdns-profile-server.service /etc/systemd/system/
+
+  If you copied from the repo directly:
+
+  cp /path/to/masterdns-profile-server.service /etc/systemd/system/
+
+  6. Enable and start it:
+
+  systemctl daemon-reload
+  systemctl enable masterdns-profile-server
+  systemctl start masterdns-profile-server
+
+  7. Check logs:
+
+  systemctl status masterdns-profile-server
+  journalctl -u masterdns-profile-server -f
+
+  8. Open the port:
+
+  ufw allow 8080/tcp
+
+  Important:
+
+  - The secret in server.py must match the app secret.
+  - Right now the default is masterdns-profile-key.
+  - The Android client expects requests like:
+      - server field: YOUR_IP:8080
+      - profile field: jack
+      - actual URL: http://YOUR_IP:8080/jack

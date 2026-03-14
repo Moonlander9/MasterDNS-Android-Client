@@ -12,7 +12,8 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_app_icon"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MasterDnsVPNAndroid">
+        android:theme="@style/Theme.MasterDnsVPNAndroid"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"

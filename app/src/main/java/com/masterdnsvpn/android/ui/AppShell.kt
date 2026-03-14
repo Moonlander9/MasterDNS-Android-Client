@@ -17,8 +17,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -110,10 +109,9 @@ fun MasterDnsVpnApp(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            LargeTopAppBar(
+            TopAppBar(
                 title = { Text(text = stringResource(id = currentDestination.titleRes)) },
-                scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
                 ),
@@ -167,6 +165,9 @@ fun MasterDnsVpnApp(
                         }
                         navigateTopLevel(navController, target)
                     },
+                    onOpenRouting = { navigateTopLevel(navController, AppDestination.Routing) },
+                    onOpenScanner = { navigateTopLevel(navController, AppDestination.Scanner) },
+                    onOpenLogs = { navigateTopLevel(navController, AppDestination.Logs) },
                 )
             }
             composable(AppDestination.Routing.route) {

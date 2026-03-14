@@ -1,11 +1,12 @@
 package com.masterdnsvpn.android
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -48,6 +49,9 @@ class UiScreensTest {
                 onImportProfile = {},
                 onExportProfileQr = { "" },
                 onOpenConfig = {},
+                onOpenRouting = {},
+                onOpenScanner = {},
+                onOpenLogs = {},
             )
         }
 
@@ -68,6 +72,9 @@ class UiScreensTest {
                 onImportProfile = {},
                 onExportProfileQr = { "" },
                 onOpenConfig = {},
+                onOpenRouting = {},
+                onOpenScanner = {},
+                onOpenLogs = {},
             )
         }
 
@@ -138,6 +145,9 @@ class UiScreensTest {
                 onScannerConcurrencyChanged = {},
                 onScannerProxyEnabledChanged = {},
                 onScannerSlipstreamPathChanged = {},
+                onScannerRemoteServerChanged = {},
+                onScannerRemoteNameChanged = {},
+                onScannerFetchRemoteProfile = {},
                 onScannerStart = {},
                 onScannerPause = {},
                 onScannerResume = {},
@@ -174,7 +184,7 @@ class UiScreensTest {
         }
 
         composeRule.onNodeWithText("message-250", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("message-001", substring = true).assertDoesNotExist()
+        composeRule.onAllNodesWithText("message-001", substring = true).assertCountEquals(0)
 
         composeRule.onNodeWithTag(LOGS_MODE_TAG).performClick()
         composeRule.onNodeWithText("message-001", substring = true).assertIsDisplayed()

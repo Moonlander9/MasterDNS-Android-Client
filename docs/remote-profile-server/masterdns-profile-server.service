@@ -1,0 +1,14 @@
+[Unit]
+Description=MasterDNS Remote Profile Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/masterdns-profile-server
+ExecStart=/usr/bin/python3 /opt/masterdns-profile-server/server.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

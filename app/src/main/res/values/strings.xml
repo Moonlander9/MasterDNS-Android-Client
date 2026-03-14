@@ -53,6 +53,12 @@
     <string name="home_validation_title">Configuration issues found</string>
     <string name="home_validation_subtitle">Resolve these before relying on the tunnel.</string>
     <string name="home_open_config">Open Config</string>
+    <string name="home_navigation_title">Jump to the right screen</string>
+    <string name="home_navigation_subtitle">Open the part of the app that controls the option you need.</string>
+    <string name="home_navigation_config">Domains, resolvers, auth, and tunnel settings.</string>
+    <string name="home_navigation_routing">Choose full tunnel or specific apps.</string>
+    <string name="home_navigation_scanner">Find and apply faster DNS resolvers.</string>
+    <string name="home_navigation_logs">%1$d retained events and diagnostics.</string>
     <string name="home_quick_actions">Quick Actions</string>
     <string name="home_quick_actions_subtitle">Import, export, and share your active profile.</string>
     <string name="home_tunnel_details_title">Tunnel Details</string>
@@ -86,6 +92,8 @@
     <string name="config_search_label">Search settings</string>
     <string name="config_hero_title">Connection configuration</string>
     <string name="config_hero_subtitle">Core tunnel values stay visible, while advanced tuning stays out of the way until needed.</string>
+    <string name="config_sections_label">Browse by section</string>
+    <string name="config_section_all">All</string>
     <string name="config_summary_domains">Domains</string>
     <string name="config_summary_resolvers">Resolvers</string>
     <string name="config_summary_errors">Errors</string>
@@ -158,7 +166,7 @@
     <string name="scanner_domain_label">Scan Domain</string>
     <string name="scanner_concurrency_label">Scanner Concurrency</string>
     <string name="scanner_remote_profile_title">Remote Profile</string>
-    <string name="scanner_remote_profile_server_label">Server IP or IP:Port</string>
+    <string name="scanner_remote_profile_server_label">Server Address or URL</string>
     <string name="scanner_remote_profile_name_label">Profile Name</string>
     <string name="scanner_remote_profile_fetch">Fetch and Apply</string>
     <string name="scanner_record_type_title">Record Type</string>
@@ -205,10 +213,16 @@
     <string name="logs_hero_subtitle">Review the current log stream, filter signal from noise, and export when you need deeper debugging.</string>
     <string name="logs_summary_visible">Visible Logs</string>
     <string name="logs_summary_total">Total Logs</string>
+    <string name="logs_summary_mode">View</string>
+    <string name="logs_summary_latest">Latest Timestamp</string>
+    <string name="logs_latest_first">Latest first</string>
     <string name="logs_controls_title">Log Controls</string>
     <string name="logs_controls_subtitle">Clear, export, or switch between a live tail and the full retained history.</string>
     <string name="logs_clear">Clear</string>
     <string name="logs_export">Export</string>
+    <string name="logs_copy_visible">Copy Visible</string>
+    <string name="logs_copy_all">Copy All</string>
+    <string name="logs_copy_line">Copy log line</string>
     <string name="logs_show_tail">Show Tail Logs</string>
     <string name="logs_show_full">Show Full Logs</string>
     <string name="logs_filter_all">ALL</string>
@@ -229,11 +243,15 @@
     <string name="toast_clipboard_empty">Clipboard is empty</string>
     <string name="toast_profile_imported">Profile imported from clipboard</string>
     <string name="toast_profile_invalid">Invalid profile string (MDVPN3 required)</string>
+    <string name="toast_remote_profile_missing_fields">Enter both the server address and profile name</string>
     <string name="toast_remote_profile_applied">Remote profile applied</string>
+    <string name="toast_remote_profile_fetch_failed">Remote profile fetch failed: %1$s</string>
     <string name="toast_logs_exported">Diagnostics exported</string>
     <string name="toast_logs_export_failed">Failed to export diagnostics: %1$s</string>
+    <string name="toast_logs_copied">Logs copied to clipboard</string>
 
     <string name="error_invalid_config">Invalid config</string>
     <string name="error_vpn_permission_denied">VPN permission denied</string>
     <string name="error_profile_import_failed">Profile import failed: %1$s</string>
+    <string name="error_remote_profile_failed">Remote profile failed: %1$s</string>
 </resources>
