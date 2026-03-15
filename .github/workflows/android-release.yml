@@ -48,14 +48,25 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Detect signing config
+        id: signing
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ] && [ -n "$RELEASE_STORE_PASSWORD" ] && [ -n "$RELEASE_KEY_ALIAS" ] && [ -n "$RELEASE_KEY_PASSWORD" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Decode signing keystore
+        if: steps.signing.outputs.available == 'true'
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
-          if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
-            echo "Missing RELEASE_KEYSTORE_BASE64 secret" >&2
-            exit 1
-          fi
           printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RELEASE_STORE_FILE"
 
       - name: Make Gradle wrapper executable
@@ -64,8 +75,13 @@ jobs:
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest
 
-      - name: Build signed release artifacts
-        run: ./gradlew :app:assembleRelease :app:bundleRelease
+      - name: Build release artifacts
+        run: |
+          if [ "${{ steps.signing.outputs.available }}" = "true" ]; then
+            ./gradlew :app:assembleRelease :app:bundleRelease
+          else
+            ./gradlew :app:assembleRelease
+          fi
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
@@ -82,8 +98,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          shopt -s nullglob
+          files=(app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No release artifacts found" >&2
+            exit 1
+          fi
           gh release create "v${APP_VERSION_NAME}" \
-            app/build/outputs/apk/release/*.apk \
-            app/build/outputs/bundle/release/*.aab \
+            "${files[@]}" \
             --title "v${APP_VERSION_NAME}" \
             --generate-notes
