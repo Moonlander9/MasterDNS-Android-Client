@@ -49,6 +49,7 @@ data class MainUiState(
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     private val configStore = ConfigStoreV3(appContext)
+    private val tunnelRuntimeStateStore = TunnelRuntimeStateStore(appContext)
     private val scannerConfigStore = ScannerConfigStore(appContext)
     private val scannerEngine = DnsScannerEngine(
         appContext = appContext,
@@ -57,11 +58,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val maxResolverCount = 10
     private val bundledCidrLabel = appContext.getString(R.string.scanner_bundled_cidr_label)
     private val initialConfig = normalizeConfig(configStore.load())
+    private val initialTunnelState = tunnelRuntimeStateStore.load().toStatusEvent(appContext)
 
     private val _uiState = MutableStateFlow(
         MainUiState(
             config = initialConfig,
-            statusMessage = appContext.getString(R.string.status_idle),
+            status = initialTunnelState.status ?: TunnelStatus.IDLE,
+            statusMessage = initialTunnelState.message,
+            lastCode = initialTunnelState.code,
             validationErrors = initialConfig.validateForAndroidV1(appContext),
             scannerConfig = scannerConfigStore.load(defaultBundledLabel = bundledCidrLabel),
             scannerSession = com.masterdnsvpn.android.scanner.ScannerSessionState(
@@ -257,6 +261,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onTunnelEvent(event: TunnelEvent) {
+        applyTunnelEvent(event, appendLog = true)
+    }
+
+    fun refreshTunnelRuntimeState() {
+        val snapshotEvent = tunnelRuntimeStateStore.load().toStatusEvent(appContext)
+        applyTunnelEvent(snapshotEvent, appendLog = false)
+    }
+
+    private fun applyTunnelEvent(event: TunnelEvent, appendLog: Boolean) {
         if (event.type == "status") {
             val nextStatus = event.status ?: TunnelStatus.ERROR
             _uiState.value = _uiState.value.copy(
@@ -266,14 +279,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
-        val line = LogLine(
-            timestamp = event.timestamp.ifBlank { "" },
-            level = event.level,
-            message = event.message,
-            type = event.type,
-        )
-        val nextLogs = (_uiState.value.logs + line).takeLast(5000)
-        _uiState.value = _uiState.value.copy(logs = nextLogs)
+        if (appendLog) {
+            val line = LogLine(
+                timestamp = event.timestamp.ifBlank { "" },
+                level = event.level,
+                message = event.message,
+                type = event.type,
+            )
+            val nextLogs = (_uiState.value.logs + line).takeLast(5000)
+            _uiState.value = _uiState.value.copy(logs = nextLogs)
+        }
     }
 
     fun exportDiagnostics(context: Context): Result<String> {

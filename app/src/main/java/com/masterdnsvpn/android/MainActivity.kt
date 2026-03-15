@@ -197,6 +197,7 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             registerReceiver(tunnelReceiver, filter)
         }
+        viewModel.refreshTunnelRuntimeState()
     }
 
     override fun onStop() {

@@ -66,6 +66,7 @@ class MasterDnsVpnService : VpnService() {
     private lateinit var bridge: PythonBridge
     private lateinit var tunnelEngine: TunnelEngine
     private lateinit var diagnosticsStore: TunnelDiagnosticsStore
+    private lateinit var runtimeStateStore: TunnelRuntimeStateStore
 
     private var pollJob: Job? = null
     private var reconnectJob: Job? = null
@@ -122,6 +123,8 @@ class MasterDnsVpnService : VpnService() {
         bridge = PythonBridge(applicationContext)
         tunnelEngine = HevTunnelEngine()
         diagnosticsStore = TunnelDiagnosticsStore(applicationContext)
+        runtimeStateStore = TunnelRuntimeStateStore(applicationContext)
+        restoreRuntimeState()
         createNotificationChannel()
 
         runCatching {
@@ -180,6 +183,17 @@ class MasterDnsVpnService : VpnService() {
 
                 desiredRunning = true
                 lastConfigPath = configPath
+                persistCommandState()
+
+                if (bridge.isRunning() && tunnelEngine.isRunning()) {
+                    emitStatus(
+                        TunnelStatus.CONNECTED,
+                        "VPN tunnel is already running.",
+                        "VPN_ALREADY_CONNECTED",
+                    )
+                    updateNotification("VPN tunnel running")
+                    return START_STICKY
+                }
 
                 val foregroundStarted = runCatching {
                     startForeground(NOTIFICATION_ID, buildNotification("Starting VPN tunnel..."))
@@ -210,6 +224,7 @@ class MasterDnsVpnService : VpnService() {
             }
 
             else -> {
+                restoreRuntimeState()
                 if (desiredRunning && !lastConfigPath.isNullOrBlank()) {
                     runCatching {
                         startForeground(NOTIFICATION_ID, buildNotification("Restoring VPN tunnel..."))
@@ -232,6 +247,9 @@ class MasterDnsVpnService : VpnService() {
     private fun startTunnel(configPath: String) {
         reconnectJob?.cancel()
         reconnectJob = null
+        lastConfigPath = configPath
+        desiredRunning = true
+        persistCommandState()
 
         serviceScope.launch {
             val started = runCatching {
@@ -401,6 +419,7 @@ class MasterDnsVpnService : VpnService() {
 
     private fun stopTunnel(manual: Boolean) {
         desiredRunning = !manual
+        persistCommandState()
         reconnectJob?.cancel()
         reconnectJob = null
         pollJob?.cancel()
@@ -776,6 +795,9 @@ class MasterDnsVpnService : VpnService() {
         if (::diagnosticsStore.isInitialized) {
             diagnosticsStore.appendEvent(event, stage = event.code)
         }
+        if (::runtimeStateStore.isInitialized) {
+            runtimeStateStore.saveStatus(event)
+        }
 
         val intent = Intent(BROADCAST_TUNNEL_EVENT).apply {
             `package` = packageName
@@ -787,6 +809,30 @@ class MasterDnsVpnService : VpnService() {
             putExtra(EXTRA_EVENT_TIMESTAMP, event.timestamp)
         }
         sendBroadcast(intent)
+    }
+
+    private fun restoreRuntimeState() {
+        if (!::runtimeStateStore.isInitialized) {
+            return
+        }
+
+        val snapshot = runtimeStateStore.load()
+        desiredRunning = snapshot.desiredRunning
+        autoReconnect = snapshot.autoReconnect
+        if (lastConfigPath.isNullOrBlank()) {
+            lastConfigPath = snapshot.configPath
+        }
+    }
+
+    private fun persistCommandState() {
+        if (!::runtimeStateStore.isInitialized) {
+            return
+        }
+        runtimeStateStore.saveCommandState(
+            desiredRunning = desiredRunning,
+            autoReconnect = autoReconnect,
+            configPath = lastConfigPath,
+        )
     }
 
     private fun handleServiceException(code: String, throwable: Throwable) {

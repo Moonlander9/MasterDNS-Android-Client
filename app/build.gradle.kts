@@ -35,8 +35,8 @@ val hasReleaseSigning = !releaseStoreFilePath.isNullOrBlank() &&
     !releaseKeyAlias.isNullOrBlank() &&
     !releaseKeyPassword.isNullOrBlank()
 
-val defaultVersionCode = 8
-val defaultVersionName = "1.0.6"
+val defaultVersionCode = 9
+val defaultVersionName = "1.0.7"
 val appVersionCode = resolveBuildProperty("APP_VERSION_CODE")?.toIntOrNull() ?: defaultVersionCode
 val appVersionName = resolveBuildProperty("APP_VERSION_NAME") ?: defaultVersionName
 
