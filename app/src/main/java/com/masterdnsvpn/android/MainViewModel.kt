@@ -47,17 +47,26 @@ data class MainUiState(
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val configStore = ConfigStoreV3(application.applicationContext)
-    private val scannerConfigStore = ScannerConfigStore(application.applicationContext)
-    private val scannerEngine = DnsScannerEngine(scope = viewModelScope)
+    private val appContext = application.applicationContext
+    private val configStore = ConfigStoreV3(appContext)
+    private val scannerConfigStore = ScannerConfigStore(appContext)
+    private val scannerEngine = DnsScannerEngine(
+        appContext = appContext,
+        scope = viewModelScope,
+    )
     private val maxResolverCount = 10
+    private val bundledCidrLabel = appContext.getString(R.string.scanner_bundled_cidr_label)
     private val initialConfig = normalizeConfig(configStore.load())
 
     private val _uiState = MutableStateFlow(
         MainUiState(
             config = initialConfig,
-            validationErrors = initialConfig.validateForAndroidV1(),
-            scannerConfig = scannerConfigStore.load(),
+            statusMessage = appContext.getString(R.string.status_idle),
+            validationErrors = initialConfig.validateForAndroidV1(appContext),
+            scannerConfig = scannerConfigStore.load(defaultBundledLabel = bundledCidrLabel),
+            scannerSession = com.masterdnsvpn.android.scanner.ScannerSessionState(
+                lastMessage = appContext.getString(R.string.scan_status_idle),
+            ),
         ),
     )
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -205,7 +214,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val decoded = normalizeConfig(TomlCodec.decode(content))
         _uiState.value = _uiState.value.copy(
             config = decoded,
-            validationErrors = decoded.validateForAndroidV1(),
+            validationErrors = decoded.validateForAndroidV1(appContext),
         )
         configStore.save(decoded)
     }
@@ -223,7 +232,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val decoded = normalizeConfig(ProfileCodec.decode(profile))
             _uiState.value = _uiState.value.copy(
                 config = decoded,
-                validationErrors = decoded.validateForAndroidV1(),
+                validationErrors = decoded.validateForAndroidV1(appContext),
             )
             configStore.save(decoded)
         }
@@ -232,7 +241,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun persistConfig(context: Context): Result<String> {
         val config = normalizeConfig(_uiState.value.config)
         _uiState.update { current -> current.copy(config = config) }
-        val errors = config.validateForAndroidV1()
+        val errors = config.validateForAndroidV1(appContext)
         _uiState.value = _uiState.value.copy(validationErrors = errors)
         if (errors.isNotEmpty()) {
             return Result.failure(IllegalArgumentException(errors.joinToString("\n")))
@@ -312,8 +321,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 current.copy(
                     scannerSession = current.scannerSession.copy(
                         status = ScanStatus.ERROR,
-                        lastMessage = "Select a CIDR file before scanning",
-                        error = "CIDR file not selected",
+                        lastMessage = appContext.getString(R.string.scanner_error_select_cidr_before_scan),
+                        error = appContext.getString(R.string.scanner_error_cidr_file_not_selected),
                     ),
                 )
             }
@@ -335,8 +344,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     current.copy(
                         scannerSession = current.scannerSession.copy(
                             status = ScanStatus.ERROR,
-                            lastMessage = "Invalid CIDR URI",
-                            error = "Unable to parse selected CIDR file",
+                            lastMessage = appContext.getString(R.string.scanner_error_invalid_cidr_uri),
+                            error = appContext.getString(R.string.scanner_error_parse_selected_cidr_file),
                         ),
                     )
                 }
@@ -344,7 +353,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             suspend {
                 app.contentResolver.openInputStream(uri)?.bufferedReader()
-                    ?: throw IllegalStateException("Unable to open CIDR file")
+                    ?: throw IllegalStateException(appContext.getString(R.string.scanner_error_open_cidr_file))
             }
         }
 
@@ -377,7 +386,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { current ->
                     current.copy(
                         scannerSession = current.scannerSession.copy(
-                            lastMessage = "Manual save failed",
+                            lastMessage = appContext.getString(R.string.scanner_error_manual_save_failed),
                             error = it.message,
                         ),
                     )
@@ -395,7 +404,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun importTomlIfValid(content: String): Result<ClientConfig> {
         return runCatching {
             val decoded = normalizeConfig(TomlCodec.decode(content))
-            val errors = decoded.validateForAndroidV1()
+            val errors = decoded.validateForAndroidV1(appContext)
             if (errors.isNotEmpty()) {
                 throw IllegalArgumentException(errors.joinToString("\n"))
             }

@@ -1,5 +1,8 @@
 package com.masterdnsvpn.android.scanner
 
+import android.content.Context
+import com.masterdnsvpn.android.R
+import com.masterdnsvpn.android.localizedProxyResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
@@ -40,6 +43,7 @@ private const val PROXY_TEST_CONCURRENCY = 5
 private const val PROXY_PORT_START = 10800
 
 class DnsScannerEngine(
+    private val appContext: Context,
     private val scope: CoroutineScope,
     private val networkClient: ScannerNetworkClient = DnsJavaScannerNetworkClient(),
     private val proxyTester: SlipstreamProxyTester = ProcessSlipstreamProxyTester(),
@@ -47,7 +51,9 @@ class DnsScannerEngine(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
-    private val _state = MutableStateFlow(ScannerSessionState())
+    private val _state = MutableStateFlow(
+        ScannerSessionState(lastMessage = appContext.getString(R.string.scan_status_idle)),
+    )
     val state: StateFlow<ScannerSessionState> = _state.asStateFlow()
 
     private var scanJob: Job? = null
@@ -119,7 +125,7 @@ class DnsScannerEngine(
             return
         }
         paused.value = true
-        emitSnapshot(status = ScanStatus.PAUSED, message = "Scan paused")
+        emitSnapshot(status = ScanStatus.PAUSED, message = appContext.getString(R.string.scanner_message_scan_paused))
     }
 
     fun resumeScan() {
@@ -127,7 +133,7 @@ class DnsScannerEngine(
             return
         }
         paused.value = false
-        emitSnapshot(status = ScanStatus.RUNNING, message = "Scan resumed")
+        emitSnapshot(status = ScanStatus.RUNNING, message = appContext.getString(R.string.scanner_message_scan_resumed))
     }
 
     fun requestShuffle() {
@@ -135,7 +141,7 @@ class DnsScannerEngine(
             return
         }
         shuffleRequested.set(true)
-        emitSnapshot(message = "Manual shuffle requested")
+        emitSnapshot(message = appContext.getString(R.string.scanner_message_manual_shuffle_requested))
     }
 
     fun stopScan() {
@@ -146,19 +152,19 @@ class DnsScannerEngine(
         jobToStop?.cancel()
         scope.launch {
             jobToStop?.runCatching { cancelAndJoin() }
-            emitSnapshot(status = ScanStatus.CANCELLED, message = "Scan cancelled")
+            emitSnapshot(status = ScanStatus.CANCELLED, message = appContext.getString(R.string.scanner_message_scan_cancelled))
         }
     }
 
     suspend fun saveResultsNow(): Result<String> {
         val snapshot = _state.value
         if (snapshot.entries.isEmpty()) {
-            return Result.failure(IllegalStateException("No results available"))
+            return Result.failure(IllegalStateException(appContext.getString(R.string.scanner_error_no_results_available)))
         }
         val result = writeCsvFile(autoSave = false)
         result.onSuccess { path ->
             latestCsvPath = path
-            emitSnapshot(csvPath = path, message = "Results saved")
+            emitSnapshot(csvPath = path, message = appContext.getString(R.string.scanner_message_results_saved))
         }
         return result
     }
@@ -178,8 +184,8 @@ class DnsScannerEngine(
         }.getOrElse { error ->
             emitSnapshot(
                 status = ScanStatus.ERROR,
-                message = "Failed to read CIDR file",
-                error = error.message ?: "Unable to read CIDR file",
+                message = appContext.getString(R.string.scanner_message_failed_to_read_cidr_file),
+                error = error.message ?: appContext.getString(R.string.scanner_error_unable_to_read_cidr_file),
             )
             return
         }
@@ -187,8 +193,8 @@ class DnsScannerEngine(
         if (cidrs.isEmpty()) {
             emitSnapshot(
                 status = ScanStatus.ERROR,
-                message = "No valid CIDR ranges found",
-                error = "CIDR file is empty or invalid",
+                message = appContext.getString(R.string.scanner_message_no_valid_cidr_ranges),
+                error = appContext.getString(R.string.scanner_error_cidr_file_empty_or_invalid),
             )
             return
         }
@@ -207,14 +213,17 @@ class DnsScannerEngine(
             if (!capability.available) {
                 emitSnapshot(
                     status = ScanStatus.RUNNING,
-                    message = "Proxy test unavailable: ${capability.reason}",
+                    message = appContext.getString(
+                        R.string.scanner_message_proxy_test_unavailable_with_reason,
+                        capability.reason,
+                    ),
                 )
             }
         }
 
         emitSnapshot(
             status = ScanStatus.RUNNING,
-            message = "Scanning started",
+            message = appContext.getString(R.string.scanner_message_scanning_started),
         )
 
         val concurrency = config.concurrency.coerceAtLeast(1)
@@ -279,7 +288,7 @@ class DnsScannerEngine(
                     }
                 }
 
-                emitSnapshot(message = "Extra tests updated for $ip")
+                emitSnapshot(message = appContext.getString(R.string.scanner_message_extra_tests_updated, ip))
             }
 
             extraTestJobs += job
@@ -294,7 +303,7 @@ class DnsScannerEngine(
             if (!proxyFeatureAvailable) {
                 val current = entries[ip] ?: return
                 entries[ip] = current.withUpdate(proxyResult = ProxyResultState.UNAVAILABLE)
-                emitSnapshot(message = "Proxy test unavailable")
+                emitSnapshot(message = appContext.getString(R.string.scanner_message_proxy_test_unavailable))
                 return
             }
 
@@ -302,7 +311,7 @@ class DnsScannerEngine(
                 proxyTestSemaphore.withPermit {
                     val current = entries[ip] ?: return@withPermit
                     entries[ip] = current.withUpdate(proxyResult = ProxyResultState.TESTING)
-                    emitSnapshot(message = "Proxy testing $ip")
+                    emitSnapshot(message = appContext.getString(R.string.scanner_message_proxy_testing, ip))
 
                     val port = proxyPorts.receive()
                     val result = try {
@@ -324,7 +333,13 @@ class DnsScannerEngine(
                         proxyFailed.incrementAndGet()
                     }
 
-                    emitSnapshot(message = "Proxy test ${result.name.lowercase()} for $ip")
+                    emitSnapshot(
+                        message = appContext.getString(
+                            R.string.scanner_message_proxy_test_result,
+                            appContext.localizedProxyResult(result),
+                            ip,
+                        ),
+                    )
                 }
             }
 
@@ -380,7 +395,7 @@ class DnsScannerEngine(
                 lastStatsUpdate = now
                 autoShuffleCount = autoShuffleController.autoShuffleCount
                 testedBlocksCount = testedBlocks.size
-                emitSnapshot(message = "Scanning in progress")
+                emitSnapshot(message = appContext.getString(R.string.scanner_message_scanning_in_progress))
             }
         }
 
@@ -494,7 +509,7 @@ class DnsScannerEngine(
                 if (!reshuffled) {
                     scanComplete = true
                 } else {
-                    emitSnapshot(message = "Reshuffling stream order")
+                    emitSnapshot(message = appContext.getString(R.string.scanner_message_reshuffling_stream_order))
                     drainActiveTasks(timeoutMs = 5_000)
                 }
             }
@@ -532,18 +547,18 @@ class DnsScannerEngine(
             if (!cancelledByUser.get() && currentCoroutineContext().isActive) {
                 writeCsvFile(autoSave = true).onSuccess { path ->
                     latestCsvPath = path
-                    emitSnapshot(csvPath = path, message = "Results auto-saved")
+                    emitSnapshot(csvPath = path, message = appContext.getString(R.string.scanner_message_results_auto_saved))
                 }
-                emitSnapshot(status = ScanStatus.COMPLETED, message = "Scan completed")
+                emitSnapshot(status = ScanStatus.COMPLETED, message = appContext.getString(R.string.scanner_message_scan_completed))
             }
         } catch (cancelled: CancellationException) {
-            emitSnapshot(status = ScanStatus.CANCELLED, message = "Scan cancelled")
+            emitSnapshot(status = ScanStatus.CANCELLED, message = appContext.getString(R.string.scanner_message_scan_cancelled))
             throw cancelled
         } catch (error: Exception) {
             emitSnapshot(
                 status = ScanStatus.ERROR,
-                message = "Scanner failed",
-                error = error.message ?: "Unknown error",
+                message = appContext.getString(R.string.scanner_message_scanner_failed),
+                error = error.message ?: appContext.getString(R.string.generic_unknown),
             )
         } finally {
             proxyPorts.close()
@@ -598,17 +613,22 @@ class DnsScannerEngine(
     private suspend fun writeCsvFile(autoSave: Boolean): Result<String> {
         return withContext(ioDispatcher) {
             val export = buildCsvExport(
+                context = appContext,
                 entries = entries.values,
                 proxyEnabled = currentConfig.proxyTestEnabled,
                 proxyFeatureAvailable = proxyFeatureAvailable,
             )
             if (export.rows.isEmpty()) {
-                return@withContext Result.failure(IllegalStateException("No rows matched export filter"))
+                return@withContext Result.failure(
+                    IllegalStateException(appContext.getString(R.string.scanner_error_no_rows_matched_export_filter)),
+                )
             }
 
             val resultsDir = File(currentExportDir, "scanner_results")
             if (!resultsDir.exists() && !resultsDir.mkdirs()) {
-                return@withContext Result.failure(IllegalStateException("Failed to create scanner_results directory"))
+                return@withContext Result.failure(
+                    IllegalStateException(appContext.getString(R.string.scanner_error_failed_to_create_results_directory)),
+                )
             }
 
             val timestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")

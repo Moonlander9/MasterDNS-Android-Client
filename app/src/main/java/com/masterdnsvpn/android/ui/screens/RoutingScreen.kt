@@ -68,7 +68,14 @@ fun RoutingScreen(
         }
     }
 
-    val splitErrors = state.validationErrors.filter { it.contains("SPLIT_ALLOWLIST") }
+    val splitErrors = buildList {
+        if (state.config.vpnMode == VpnMode.SPLIT_ALLOWLIST && state.config.splitAllowlistPackages.isEmpty()) {
+            add(stringResource(R.string.validation_split_allowlist_requires_package))
+        }
+        if (state.config.splitAllowlistPackages.any { it.isBlank() }) {
+            add(stringResource(R.string.validation_split_allowlist_blank_package))
+        }
+    }
 
     VpnAppBackground {
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {

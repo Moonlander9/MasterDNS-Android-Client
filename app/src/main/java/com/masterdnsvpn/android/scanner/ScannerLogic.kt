@@ -1,5 +1,12 @@
 package com.masterdnsvpn.android.scanner
 
+import android.content.Context
+import com.masterdnsvpn.android.localizedEdns0
+import com.masterdnsvpn.android.localizedIpVersion
+import com.masterdnsvpn.android.localizedProxyResult
+import com.masterdnsvpn.android.localizedSecuritySummary
+import com.masterdnsvpn.android.localizedTransportLabel
+import com.masterdnsvpn.android.R
 import java.time.Instant
 
 private const val DNS_TIMEOUT_MS = 2_000
@@ -145,6 +152,55 @@ data class CsvExport(
     val headers: List<String>,
     val rows: List<List<String>>,
 )
+
+fun buildCsvExport(
+    context: Context,
+    entries: Collection<ScannerEntry>,
+    proxyEnabled: Boolean,
+    proxyFeatureAvailable: Boolean,
+): CsvExport {
+    val filtered = if (proxyEnabled && proxyFeatureAvailable) {
+        entries.filter { it.proxyResult == ProxyResultState.SUCCESS }
+    } else {
+        entries
+    }
+
+    val sorted = sortedEntries(filtered, proxyEnabled = proxyEnabled, proxyFeatureAvailable = proxyFeatureAvailable)
+    val headers = buildList {
+        add(context.getString(R.string.csv_header_dns))
+        add(context.getString(R.string.csv_header_ping_ms))
+        if (proxyEnabled) add(context.getString(R.string.csv_header_proxy_test))
+        add(context.getString(R.string.csv_header_ip_version))
+        add(context.getString(R.string.csv_header_tcp_udp))
+        add(context.getString(R.string.csv_header_security))
+        add(context.getString(R.string.csv_header_edns0))
+        add(context.getString(R.string.csv_header_resolved_ip))
+        add(context.getString(R.string.csv_header_isp))
+    }
+
+    val rows = sorted.map { entry ->
+        buildList {
+            add(entry.dns)
+            add(entry.pingMs.toString())
+            if (proxyEnabled) {
+                add(context.localizedProxyResult(entry.proxyResult))
+            }
+            add(context.localizedIpVersion(entry.protocolInfo.ipv6))
+            add(context.localizedTransportLabel(entry.tcpUdp))
+            add(context.localizedSecuritySummary(entry.securityInfo))
+            add(
+                when (entry.protocolInfo.edns0) {
+                    null -> ""
+                    else -> context.localizedEdns0(entry.protocolInfo.edns0)
+                },
+            )
+            add(entry.resolvedIp ?: "")
+            add(entry.isp?.org?.takeUnless { it == "-" } ?: "")
+        }
+    }
+
+    return CsvExport(headers = headers, rows = rows)
+}
 
 fun buildCsvExport(
     entries: Collection<ScannerEntry>,

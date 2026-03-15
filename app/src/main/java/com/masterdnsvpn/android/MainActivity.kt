@@ -23,6 +23,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import com.masterdnsvpn.android.ui.MasterDnsVpnApp
 import com.masterdnsvpn.android.ui.theme.MasterDnsVPNAndroidTheme
 import kotlinx.coroutines.Dispatchers
@@ -64,7 +67,7 @@ class MainActivity : ComponentActivity() {
                 toast(getString(R.string.toast_config_imported))
             }
         }.onFailure {
-            toast(getString(R.string.toast_config_import_failed, it.message ?: "unknown"))
+            toast(getString(R.string.toast_config_import_failed, it.message ?: getString(R.string.generic_unknown)))
         }
     }
 
@@ -76,7 +79,7 @@ class MainActivity : ComponentActivity() {
         }.onSuccess {
             toast(getString(R.string.toast_config_exported))
         }.onFailure {
-            toast(getString(R.string.toast_config_export_failed, it.message ?: "unknown"))
+            toast(getString(R.string.toast_config_export_failed, it.message ?: getString(R.string.generic_unknown)))
         }
     }
 
@@ -84,7 +87,7 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
             if (uri == null) return@registerForActivityResult
             val output = viewModel.exportDiagnostics(this).getOrElse {
-                toast(getString(R.string.toast_logs_export_failed, it.message ?: "unknown"))
+                toast(getString(R.string.toast_logs_export_failed, it.message ?: getString(R.string.generic_unknown)))
                 return@registerForActivityResult
             }
 
@@ -93,7 +96,7 @@ class MainActivity : ComponentActivity() {
             }.onSuccess {
                 toast(getString(R.string.toast_logs_exported))
             }.onFailure {
-                toast(getString(R.string.toast_logs_export_failed, it.message ?: "unknown"))
+                toast(getString(R.string.toast_logs_export_failed, it.message ?: getString(R.string.generic_unknown)))
             }
         }
 
@@ -152,27 +155,34 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(PersianLocaleManager.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PersianLocaleManager.applyToResources(this)
         enableEdgeToEdge()
 
         setContent {
             val uiState by viewModel.uiState.collectAsState()
             MasterDnsVPNAndroidTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    MasterDnsVpnApp(
-                        state = uiState,
-                        viewModel = viewModel,
-                        onConnect = ::startServiceTunnel,
-                        onDisconnect = ::stopServiceTunnel,
-                        onImportToml = { importLauncher.launch(configImportMimeTypes) },
-                        onExportToml = { exportLauncher.launch("client_config.toml") },
-                        onCopyProfile = ::copyProfileToClipboard,
-                        onImportProfile = ::importProfileFromClipboard,
-                        onPickScannerCidr = { scannerCidrLauncher.launch(arrayOf("text/*")) },
-                        onFetchScannerRemoteProfile = ::fetchScannerRemoteProfile,
-                        onExportLogs = { diagnosticsExportLauncher.launch("masterdnsvpn-diagnostics.log") },
-                    )
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        MasterDnsVpnApp(
+                            state = uiState,
+                            viewModel = viewModel,
+                            onConnect = ::startServiceTunnel,
+                            onDisconnect = ::stopServiceTunnel,
+                            onImportToml = { importLauncher.launch(configImportMimeTypes) },
+                            onExportToml = { exportLauncher.launch("client_config.toml") },
+                            onCopyProfile = ::copyProfileToClipboard,
+                            onImportProfile = ::importProfileFromClipboard,
+                            onPickScannerCidr = { scannerCidrLauncher.launch(arrayOf("text/*")) },
+                            onFetchRemoteProfile = ::fetchScannerRemoteProfile,
+                            onExportLogs = { diagnosticsExportLauncher.launch("masterdnsvpn-diagnostics.log") },
+                        )
+                    }
                 }
             }
         }
@@ -238,7 +248,10 @@ class MainActivity : ComponentActivity() {
         runCatching {
             startForegroundService(intent)
         }.onFailure { error ->
-            val message = "Failed to start VPN service: ${error.message ?: "unknown"}"
+            val message = getString(
+                R.string.error_start_vpn_service_failed,
+                error.message ?: getString(R.string.generic_unknown),
+            )
             viewModel.onTunnelEvent(
                 TunnelEvent(
                     type = "status",
@@ -264,7 +277,10 @@ class MainActivity : ComponentActivity() {
             startService(intent)
             true
         }.onFailure { error ->
-            val message = "Failed to stop VPN service: ${error.message ?: "unknown"}"
+            val message = getString(
+                R.string.error_stop_vpn_service_failed,
+                error.message ?: getString(R.string.generic_unknown),
+            )
             viewModel.onTunnelEvent(
                 TunnelEvent(
                     type = "status",
@@ -281,7 +297,7 @@ class MainActivity : ComponentActivity() {
     private fun copyProfileToClipboard() {
         val profile = viewModel.exportProfileString()
         val manager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("MasterDnsVPN Profile", profile)
+        val clip = ClipData.newPlainText(getString(R.string.clipboard_profile_label), profile)
         manager.setPrimaryClip(clip)
         toast(getString(R.string.toast_profile_copied))
     }
@@ -303,7 +319,10 @@ class MainActivity : ComponentActivity() {
                     type = "status",
                     status = TunnelStatus.ERROR,
                     level = "ERROR",
-                    message = getString(R.string.error_profile_import_failed, it.message ?: "unknown"),
+                    message = getString(
+                        R.string.error_profile_import_failed,
+                        it.message ?: getString(R.string.generic_unknown),
+                    ),
                     code = "PROFILE_IMPORT_ERROR",
                 ),
             )
@@ -346,7 +365,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun downloadRemoteProfile(server: String, profileName: String): Result<String> {
-        val request = buildRemoteProfileRequest(server, profileName).getOrElse {
+        val request = buildRemoteProfileRequest(
+            server = server,
+            profileName = profileName,
+            messages = remoteProfileRequestMessages(),
+        ).getOrElse {
             return Result.failure(it)
         }
         val timestamp = (System.currentTimeMillis() / 1000L).toString()
@@ -357,10 +380,12 @@ class MainActivity : ComponentActivity() {
             timestamp = timestamp,
             nonce = nonce,
             secret = BuildConfig.REMOTE_PROFILE_SHARED_SECRET,
-        ) ?: return Result.failure(IllegalStateException("Unable to sign remote profile request"))
+        ) ?: return Result.failure(
+            IllegalStateException(getString(R.string.error_unable_to_sign_remote_profile_request)),
+        )
 
         val connection = (request.url.openConnection() as? HttpURLConnection)
-            ?: return Result.failure(IOException("Unable to open remote profile connection"))
+            ?: return Result.failure(IOException(getString(R.string.error_unable_to_open_remote_profile_connection)))
         return runCatching {
             connection.requestMethod = "GET"
             connection.connectTimeout = 5_000
@@ -372,12 +397,12 @@ class MainActivity : ComponentActivity() {
 
             val responseCode = connection.responseCode
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw IOException("Remote server returned HTTP $responseCode")
+                throw IOException(getString(R.string.error_remote_server_returned_http, responseCode))
             }
 
             connection.inputStream.bufferedReader().use { reader ->
                 reader.readText().takeIf { it.isNotBlank() }
-                    ?: throw IOException("Remote server returned an empty profile")
+                    ?: throw IOException(getString(R.string.error_remote_server_returned_empty_profile))
             }
         }.also {
             connection.disconnect()
@@ -385,7 +410,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun reportRemoteProfileFailure(error: Throwable, code: String) {
-        val message = error.message?.takeIf { it.isNotBlank() } ?: "unknown"
+        val message = error.message?.takeIf { it.isNotBlank() } ?: getString(R.string.generic_unknown)
         viewModel.onTunnelEvent(
             TunnelEvent(
                 type = "status",
@@ -441,23 +466,33 @@ internal data class RemoteProfileRequest(
     val path: String,
 )
 
-internal fun buildRemoteProfileRequest(server: String, profileName: String): Result<RemoteProfileRequest> {
+internal fun buildRemoteProfileRequest(
+    server: String,
+    profileName: String,
+    messages: RemoteProfileRequestMessages = RemoteProfileRequestMessages(
+        serverAddressRequired = "Server address is required",
+        serverMustUseHttpOrHttps = "Server must use http:// or https://",
+        invalidServerAddress = "Invalid server address",
+        serverAddressMustNotIncludeQueryOrFragment = "Server address must not include a query or fragment",
+        profileNameRequired = "Profile name is required",
+    ),
+): Result<RemoteProfileRequest> {
     return runCatching {
         val trimmedServer = server.trim()
-        require(trimmedServer.isNotBlank()) { "Server address is required" }
+        require(trimmedServer.isNotBlank()) { messages.serverAddressRequired }
 
         val rawAddress = if ("://" in trimmedServer) trimmedServer else "http://$trimmedServer"
         val uri = URI(rawAddress)
         val scheme = uri.scheme?.lowercase()?.takeIf { it == "http" || it == "https" }
-            ?: throw IllegalArgumentException("Server must use http:// or https://")
+            ?: throw IllegalArgumentException(messages.serverMustUseHttpOrHttps)
         val authority = uri.rawAuthority?.takeIf { it.isNotBlank() && uri.host != null }
-            ?: throw IllegalArgumentException("Invalid server address")
+            ?: throw IllegalArgumentException(messages.invalidServerAddress)
         require(uri.rawQuery.isNullOrBlank() && uri.rawFragment.isNullOrBlank()) {
-            "Server address must not include a query or fragment"
+            messages.serverAddressMustNotIncludeQueryOrFragment
         }
 
         val encodedProfileName = encodePathSegment(profileName.trim())
-        require(encodedProfileName.isNotBlank()) { "Profile name is required" }
+        require(encodedProfileName.isNotBlank()) { messages.profileNameRequired }
 
         val basePath = (uri.rawPath ?: "").trimEnd('/')
         val requestPath = if (basePath.isBlank()) "/$encodedProfileName" else "$basePath/$encodedProfileName"
@@ -468,7 +503,7 @@ internal fun buildRemoteProfileRequest(server: String, profileName: String): Res
         )
     }.recoverCatching { error ->
         when (error) {
-            is MalformedURLException -> throw IllegalArgumentException("Invalid server address", error)
+            is MalformedURLException -> throw IllegalArgumentException(messages.invalidServerAddress, error)
             else -> throw error
         }
     }

@@ -9,13 +9,13 @@ class ScannerConfigStore(
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun load(): ScannerConfig {
-        val raw = prefs.getString(KEY_CONFIG_JSON, null) ?: return ScannerConfig()
+    fun load(defaultBundledLabel: String = BUNDLED_CIDR_LABEL): ScannerConfig {
+        val raw = prefs.getString(KEY_CONFIG_JSON, null) ?: return ScannerConfig(cidrLabel = defaultBundledLabel)
         return runCatching {
             val json = JSONObject(raw)
             ScannerConfig(
                 cidrUri = json.optString("cidrUri", BUNDLED_CIDR_URI),
-                cidrLabel = json.optString("cidrLabel", BUNDLED_CIDR_LABEL),
+                cidrLabel = json.optString("cidrLabel", defaultBundledLabel),
                 domain = json.optString("domain", "google.com"),
                 recordType = runCatching {
                     ScanRecordType.valueOf(json.optString("recordType", ScanRecordType.A.name))
@@ -33,9 +33,13 @@ class ScannerConfigStore(
         }.map { loaded ->
             loaded.copy(
                 cidrUri = loaded.cidrUri.ifBlank { BUNDLED_CIDR_URI },
-                cidrLabel = loaded.cidrLabel.ifBlank { BUNDLED_CIDR_LABEL },
+                cidrLabel = when {
+                    loaded.cidrUri == BUNDLED_CIDR_URI &&
+                        (loaded.cidrLabel.isBlank() || loaded.cidrLabel == BUNDLED_CIDR_LABEL) -> defaultBundledLabel
+                    else -> loaded.cidrLabel.ifBlank { defaultBundledLabel }
+                },
             )
-        }.getOrDefault(ScannerConfig())
+        }.getOrDefault(ScannerConfig(cidrLabel = defaultBundledLabel))
     }
 
     fun save(config: ScannerConfig) {

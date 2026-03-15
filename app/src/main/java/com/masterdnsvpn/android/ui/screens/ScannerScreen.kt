@@ -14,6 +14,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -22,6 +23,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.masterdnsvpn.android.R
+import com.masterdnsvpn.android.localizedEdns0
+import com.masterdnsvpn.android.localizedIpVersion
+import com.masterdnsvpn.android.localizedProxyResult
+import com.masterdnsvpn.android.localizedSecuritySummary
+import com.masterdnsvpn.android.localizedTransportLabel
+import com.masterdnsvpn.android.scanPresetLabelRes
+import com.masterdnsvpn.android.scanStatusLabelRes
 import com.masterdnsvpn.android.scanner.ProxyResultState
 import com.masterdnsvpn.android.scanner.ScanPreset
 import com.masterdnsvpn.android.scanner.ScanRecordType
@@ -51,9 +59,6 @@ fun ScannerScreen(
     onScannerConcurrencyChanged: (String) -> Unit,
     onScannerProxyEnabledChanged: (Boolean) -> Unit,
     onScannerSlipstreamPathChanged: (String) -> Unit,
-    onScannerRemoteServerChanged: (String) -> Unit,
-    onScannerRemoteNameChanged: (String) -> Unit,
-    onScannerFetchRemoteProfile: () -> Unit,
     onScannerStart: () -> Unit,
     onScannerPause: () -> Unit,
     onScannerResume: () -> Unit,
@@ -80,7 +85,10 @@ fun ScannerScreen(
                         subtitle = stringResource(R.string.scanner_hero_subtitle),
                     )
                     StatusPill(
-                        label = stringResource(R.string.scanner_status_pill, scannerSession.status.name),
+                        label = stringResource(
+                            R.string.scanner_status_pill,
+                            stringResource(scanStatusLabelRes(scannerSession.status)),
+                        ),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         MetricBadge(
@@ -90,7 +98,7 @@ fun ScannerScreen(
                         )
                         MetricBadge(
                             label = stringResource(R.string.scanner_summary_speed),
-                            value = String.format("%.1f IP/s", scannerSession.stats.speedIpsPerSec),
+                            value = stringResource(R.string.scanner_speed_value, scannerSession.stats.speedIpsPerSec),
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -138,28 +146,6 @@ fun ScannerScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Text(
-                        text = stringResource(R.string.scanner_remote_profile_title),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                    OutlinedTextField(
-                        value = scannerConfig.remoteProfileServer,
-                        onValueChange = onScannerRemoteServerChanged,
-                        label = { Text(text = stringResource(R.string.scanner_remote_profile_server_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = scannerConfig.remoteProfileName,
-                        onValueChange = onScannerRemoteNameChanged,
-                        label = { Text(text = stringResource(R.string.scanner_remote_profile_name_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Button(
-                        onClick = onScannerFetchRemoteProfile,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(text = stringResource(R.string.scanner_remote_profile_fetch))
-                    }
-                    Text(
                         text = stringResource(R.string.scanner_record_type_title),
                         style = MaterialTheme.typography.labelLarge,
                     )
@@ -181,7 +167,7 @@ fun ScannerScreen(
                             FilterChip(
                                 selected = scannerConfig.preset == preset,
                                 onClick = { onScannerPresetChanged(preset) },
-                                label = { Text(text = presetLabelRes(preset)) },
+                                label = { Text(text = stringResource(scanPresetLabelRes(preset))) },
                             )
                         }
                     }
@@ -385,35 +371,12 @@ private fun ScannerResultCard(
     entry: ScannerEntry,
     onApplyDns: (String) -> Unit,
 ) {
-    val proxyLabel = when (entry.proxyResult) {
-        ProxyResultState.PENDING -> stringResource(R.string.proxy_state_pending)
-        ProxyResultState.TESTING -> stringResource(R.string.proxy_state_testing)
-        ProxyResultState.SUCCESS -> stringResource(R.string.proxy_state_success)
-        ProxyResultState.FAILED -> stringResource(R.string.proxy_state_failed)
-        ProxyResultState.UNAVAILABLE -> stringResource(R.string.proxy_state_unavailable)
-        null -> stringResource(R.string.proxy_state_na)
-    }
-
-    val ipVersion = when (entry.protocolInfo.ipv6) {
-        true -> stringResource(R.string.scanner_ip_v4_v6)
-        false -> stringResource(R.string.scanner_ip_v4)
-        null -> stringResource(R.string.scanner_pending)
-    }
-
-    val security = entry.securityInfo?.let {
-        buildString {
-            if (it.dnssec) append("DNSSEC ")
-            if (it.openResolver) append("Open ")
-            if (it.hijacked) append("Hijacked")
-            if (isBlank()) append("Secure")
-        }.trim()
-    } ?: stringResource(R.string.scanner_pending)
-
-    val edns0 = when (entry.protocolInfo.edns0) {
-        true -> stringResource(R.string.scanner_yes)
-        false -> stringResource(R.string.scanner_no)
-        null -> stringResource(R.string.scanner_pending)
-    }
+    val context = LocalContext.current
+    val proxyLabel = context.localizedProxyResult(entry.proxyResult)
+    val ipVersion = context.localizedIpVersion(entry.protocolInfo.ipv6)
+    val security = context.localizedSecuritySummary(entry.securityInfo)
+    val edns0 = context.localizedEdns0(entry.protocolInfo.edns0)
+    val transport = context.localizedTransportLabel(entry.tcpUdp)
 
     VpnCard(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -428,7 +391,7 @@ private fun ScannerResultCard(
                 entry.pingMs,
                 proxyLabel,
                 ipVersion,
-                entry.tcpUdp ?: stringResource(R.string.scanner_pending),
+                transport,
                 security,
                 edns0,
                 entry.resolvedIp ?: stringResource(R.string.scanner_pending),
@@ -442,14 +405,4 @@ private fun ScannerResultCard(
             Text(text = stringResource(R.string.scanner_apply))
         }
     }
-}
-
-@Composable
-private fun presetLabelRes(preset: ScanPreset): String {
-    val labelRes = when (preset) {
-        ScanPreset.FAST -> R.string.scanner_preset_fast
-        ScanPreset.DEEP -> R.string.scanner_preset_deep
-        ScanPreset.FULL -> R.string.scanner_preset_full
-    }
-    return stringResource(id = labelRes)
 }

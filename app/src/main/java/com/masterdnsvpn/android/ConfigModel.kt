@@ -1,5 +1,7 @@
 package com.masterdnsvpn.android
 
+import android.content.Context
+
 enum class VpnMode {
     FULL,
     SPLIT_ALLOWLIST,
@@ -109,6 +111,61 @@ fun ClientConfig.validateForAndroidV1(): List<String> {
         }
         if (splitAllowlistPackages.any { it.isBlank() }) {
             errors += "SPLIT_ALLOWLIST_PACKAGES must not contain blank package names."
+        }
+    }
+
+    return errors
+}
+
+fun ClientConfig.validateForAndroidV1(context: Context): List<String> {
+    val errors = mutableListOf<String>()
+
+    if (protocolType.uppercase() != "SOCKS5") {
+        errors += context.getString(R.string.validation_protocol_type_socks5_only)
+    }
+
+    if (dataEncryptionMethod !in 1..5) {
+        errors += context.getString(R.string.validation_encryption_method_range)
+    }
+
+    if (encryptionKey.isBlank()) {
+        errors += context.getString(R.string.validation_encryption_key_required)
+    }
+
+    if (domains.isEmpty() || domains.any { it.isBlank() }) {
+        errors += context.getString(R.string.validation_domains_required)
+    }
+
+    if (resolverDnsServers.isEmpty() || resolverDnsServers.any { it.isBlank() }) {
+        errors += context.getString(R.string.validation_resolvers_required)
+    }
+
+    if (listenIp != "127.0.0.1") {
+        errors += context.getString(R.string.validation_listen_ip_local_only)
+    }
+
+    if (listenPort !in 1..65535) {
+        errors += context.getString(R.string.validation_listen_port_range)
+    }
+
+    if (socksHandshakeTimeout <= 0.0) {
+        errors += context.getString(R.string.validation_socks_timeout_positive)
+    }
+
+    if (uploadCompressionType !in 0..3) {
+        errors += context.getString(R.string.validation_upload_compression_range)
+    }
+
+    if (downloadCompressionType !in 0..3) {
+        errors += context.getString(R.string.validation_download_compression_range)
+    }
+
+    if (vpnMode == VpnMode.SPLIT_ALLOWLIST) {
+        if (splitAllowlistPackages.isEmpty()) {
+            errors += context.getString(R.string.validation_split_allowlist_requires_package)
+        }
+        if (splitAllowlistPackages.any { it.isBlank() }) {
+            errors += context.getString(R.string.validation_split_allowlist_blank_package)
         }
     }
 

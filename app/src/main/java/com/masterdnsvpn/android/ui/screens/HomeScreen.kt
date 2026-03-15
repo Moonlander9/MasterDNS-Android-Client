@@ -1,377 +1,200 @@
 package com.masterdnsvpn.android.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.masterdnsvpn.android.BuildConfig
 import com.masterdnsvpn.android.MainUiState
 import com.masterdnsvpn.android.ProfileQrCode
 import com.masterdnsvpn.android.R
 import com.masterdnsvpn.android.TunnelStatus
-import com.masterdnsvpn.android.VpnMode
-import com.masterdnsvpn.android.ui.theme.MetricBadge
-import com.masterdnsvpn.android.ui.theme.SectionTitle
 import com.masterdnsvpn.android.ui.theme.StatusPill
 import com.masterdnsvpn.android.ui.theme.VpnAppBackground
-import com.masterdnsvpn.android.ui.theme.VpnCard
-import com.masterdnsvpn.android.ui.theme.VpnHeroCard
 
 const val HOME_PRIMARY_ACTION_TAG = "home_primary_action"
+const val HOME_REMOTE_PROFILE_ACTION_TAG = "home_remote_profile_action"
 
 @Composable
 fun HomeScreen(
     state: MainUiState,
+    remoteProfileConfigured: Boolean,
     onConnect: () -> Unit,
     onDisconnect: () -> Unit,
-    onImportToml: () -> Unit,
-    onExportToml: () -> Unit,
-    onCopyProfile: () -> Unit,
-    onImportProfile: () -> Unit,
-    onExportProfileQr: () -> String,
-    onOpenConfig: () -> Unit,
-    onOpenRouting: () -> Unit,
-    onOpenScanner: () -> Unit,
-    onOpenLogs: () -> Unit,
+    onRemoteProfileAction: () -> Unit,
 ) {
-    var qrProfilePayload by remember { mutableStateOf<String?>(null) }
     val primaryActionIsDisconnect = state.status in setOf(
         TunnelStatus.STARTING,
         TunnelStatus.CONNECTED,
         TunnelStatus.RECONNECTING,
         TunnelStatus.STOPPING,
     )
-    val routingLabel = if (state.config.vpnMode == VpnMode.SPLIT_ALLOWLIST) {
-        stringResource(R.string.home_routing_split)
-    } else {
-        stringResource(R.string.home_routing_full)
-    }
 
     VpnAppBackground {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            item {
-                VpnHeroCard(modifier = Modifier.fillMaxWidth()) {
-                    StatusPill(
-                        label = stringResource(
-                            R.string.home_status_pill,
-                            stringResource(id = statusLabelRes(state.status)),
-                        ),
-                        containerColor = statusContainerColor(state.status),
-                        contentColor = statusContentColor(state.status),
-                    )
-                    Text(
-                        text = stringResource(R.string.home_hero_title),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = state.statusMessage,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        MetricBadge(
-                            label = stringResource(R.string.home_routing_metric),
-                            value = routingLabel,
-                            modifier = Modifier.weight(1f),
-                        )
-                        MetricBadge(
-                            label = stringResource(R.string.home_dns_metric),
-                            value = state.config.resolverDnsServers.firstOrNull() ?: "--",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        MetricBadge(
-                            label = stringResource(R.string.home_apps_metric),
-                            value = state.config.splitAllowlistPackages.size.toString(),
-                            modifier = Modifier.weight(1f),
-                        )
-                        MetricBadge(
-                            label = stringResource(R.string.home_build_metric),
-                            value = BuildConfig.VERSION_NAME,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    Button(
-                        onClick = if (primaryActionIsDisconnect) onDisconnect else onConnect,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .testTag(HOME_PRIMARY_ACTION_TAG),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (primaryActionIsDisconnect) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            },
-                            contentColor = if (primaryActionIsDisconnect) {
-                                MaterialTheme.colorScheme.onError
-                            } else {
-                                MaterialTheme.colorScheme.onPrimary
-                            },
-                        ),
-                    ) {
-                        Text(
-                            text = stringResource(
-                                if (primaryActionIsDisconnect) R.string.action_disconnect else R.string.action_connect,
-                            ),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                    state.lastCode?.let { code ->
-                        Text(
-                            text = stringResource(R.string.home_status_code, code),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+            StatusPill(
+                label = stringResource(
+                    R.string.home_status_pill,
+                    stringResource(id = statusLabelRes(state.status)),
+                ),
+                containerColor = statusContainerColor(state.status),
+                contentColor = statusContentColor(state.status),
+            )
+            Text(
+                text = stringResource(R.string.home_simple_title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = state.statusMessage,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            ConnectionActionButton(
+                status = state.status,
+                onClick = if (primaryActionIsDisconnect) onDisconnect else onConnect,
+                modifier = Modifier.testTag(HOME_PRIMARY_ACTION_TAG),
+            )
+            OutlinedButton(
+                onClick = onRemoteProfileAction,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(HOME_REMOTE_PROFILE_ACTION_TAG),
+                contentPadding = PaddingValues(vertical = 16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.home_fetch_profile),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                )
             }
-
+            Text(
+                text = stringResource(
+                    if (remoteProfileConfigured) {
+                        R.string.home_remote_profile_ready
+                    } else {
+                        R.string.home_remote_profile_setup_hint
+                    },
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            state.lastCode?.let { code ->
+                Text(
+                    text = stringResource(R.string.home_status_code, code),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
             if (state.validationErrors.isNotEmpty()) {
-                item {
-                    VpnCard(modifier = Modifier.fillMaxWidth()) {
-                        SectionTitle(
-                            title = stringResource(R.string.home_validation_title),
-                            subtitle = stringResource(R.string.home_validation_subtitle),
-                        )
-                        state.validationErrors.take(3).forEach { error ->
-                            Text(
-                                text = "• $error",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                        OutlinedButton(onClick = onOpenConfig) {
-                            Text(text = stringResource(R.string.home_open_config))
-                        }
-                    }
-                }
+                Text(
+                    text = state.validationErrors.first(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
             }
-
-            if (state.showTcpFirstWarning) {
-                item {
-                    VpnCard(modifier = Modifier.fillMaxWidth()) {
-                        SectionTitle(title = stringResource(R.string.home_transport_title))
-                        Text(
-                            text = stringResource(R.string.home_tcp_first_warning),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            item {
-                VpnCard(modifier = Modifier.fillMaxWidth()) {
-                    SectionTitle(
-                        title = stringResource(R.string.home_navigation_title),
-                        subtitle = stringResource(R.string.home_navigation_subtitle),
-                    )
-                    NavigationShortcutRow(
-                        leftTitle = stringResource(R.string.tab_config),
-                        leftSubtitle = stringResource(R.string.home_navigation_config),
-                        leftAction = onOpenConfig,
-                        rightTitle = stringResource(R.string.tab_routing),
-                        rightSubtitle = stringResource(R.string.home_navigation_routing),
-                        rightAction = onOpenRouting,
-                    )
-                    NavigationShortcutRow(
-                        leftTitle = stringResource(R.string.tab_scanner),
-                        leftSubtitle = stringResource(R.string.home_navigation_scanner),
-                        leftAction = onOpenScanner,
-                        rightTitle = stringResource(R.string.tab_logs),
-                        rightSubtitle = stringResource(R.string.home_navigation_logs, state.logs.size),
-                        rightAction = onOpenLogs,
-                    )
-                }
-            }
-
-            item {
-                VpnCard(modifier = Modifier.fillMaxWidth()) {
-                    SectionTitle(
-                        title = stringResource(R.string.home_quick_actions),
-                        subtitle = stringResource(R.string.home_quick_actions_subtitle),
-                    )
-                    QuickActionRow(
-                        leftLabel = stringResource(R.string.action_import_toml),
-                        leftAction = onImportToml,
-                        rightLabel = stringResource(R.string.action_export_toml),
-                        rightAction = onExportToml,
-                    )
-                    QuickActionRow(
-                        leftLabel = stringResource(R.string.action_copy_profile),
-                        leftAction = onCopyProfile,
-                        rightLabel = stringResource(R.string.action_import_profile),
-                        rightAction = onImportProfile,
-                    )
-                    OutlinedButton(
-                        onClick = { qrProfilePayload = onExportProfileQr() },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(text = stringResource(R.string.action_show_profile_qr))
-                    }
-                }
-            }
-
-            item {
-                VpnCard(modifier = Modifier.fillMaxWidth()) {
-                    SectionTitle(
-                        title = stringResource(R.string.home_tunnel_details_title),
-                        subtitle = stringResource(
-                            R.string.home_build_marker,
-                            BuildConfig.VERSION_NAME,
-                            BuildConfig.UI_BUILD_MARKER,
-                        ),
-                    )
-                    DetailRow(
-                        label = stringResource(R.string.home_routing_metric),
-                        value = routingLabel,
-                    )
-                    DetailRow(
-                        label = stringResource(R.string.home_domains_metric),
-                        value = state.config.domains.joinToString(),
-                    )
-                    DetailRow(
-                        label = stringResource(R.string.home_resolvers_metric),
-                        value = state.config.resolverDnsServers.joinToString(),
-                    )
-                }
-            }
-        }
-    }
-
-    qrProfilePayload?.let { profile ->
-        ProfileQrDialog(
-            profile = profile,
-            onDismiss = { qrProfilePayload = null },
-        )
-    }
-}
-
-@Composable
-private fun QuickActionRow(
-    leftLabel: String,
-    leftAction: () -> Unit,
-    rightLabel: String,
-    rightAction: () -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedButton(
-            onClick = leftAction,
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(text = leftLabel, textAlign = TextAlign.Center)
-        }
-        OutlinedButton(
-            onClick = rightAction,
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(text = rightLabel, textAlign = TextAlign.Center)
         }
     }
 }
 
 @Composable
-private fun NavigationShortcutRow(
-    leftTitle: String,
-    leftSubtitle: String,
-    leftAction: () -> Unit,
-    rightTitle: String,
-    rightSubtitle: String,
-    rightAction: () -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        NavigationShortcutTile(
-            title = leftTitle,
-            subtitle = leftSubtitle,
-            onClick = leftAction,
-            modifier = Modifier.weight(1f),
-        )
-        NavigationShortcutTile(
-            title = rightTitle,
-            subtitle = rightSubtitle,
-            onClick = rightAction,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun NavigationShortcutTile(
-    title: String,
-    subtitle: String,
+private fun ConnectionActionButton(
+    status: TunnelStatus,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    VpnCard(
-        modifier = modifier.clickable(onClick = onClick),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+    val actionColors = connectionActionColors(status)
+    Surface(
+        modifier = modifier
+            .size(240.dp)
+            .semantics { role = Role.Button }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+        shape = CircleShape,
+        color = actionColors.outer,
+        border = androidx.compose.foundation.BorderStroke(1.dp, actionColors.border),
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(actionColors.inner, actionColors.outer),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(id = actionEmojiRes(status)),
+                    style = MaterialTheme.typography.displaySmall,
+                    color = actionColors.content,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = stringResource(id = actionTitleRes(status)),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = actionColors.content,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = stringResource(id = actionSubtitleRes(status)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = actionColors.content.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun DetailRow(
-    label: String,
-    value: String,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
-}
-
-@Composable
-private fun ProfileQrDialog(
+fun ProfileQrDialog(
     profile: String,
     onDismiss: () -> Unit,
 ) {
@@ -449,5 +272,76 @@ private fun statusLabelRes(status: TunnelStatus): Int {
         TunnelStatus.RECONNECTING -> R.string.status_reconnecting
         TunnelStatus.STOPPING -> R.string.status_stopping
         TunnelStatus.ERROR -> R.string.status_error
+    }
+}
+
+private data class ConnectionActionColors(
+    val outer: Color,
+    val inner: Color,
+    val border: Color,
+    val content: Color,
+)
+
+@Composable
+private fun connectionActionColors(status: TunnelStatus): ConnectionActionColors {
+    return when (status) {
+        TunnelStatus.CONNECTED -> ConnectionActionColors(
+            outer = Color(0xFF0E3D36),
+            inner = Color(0xFF31D4B6),
+            border = Color(0x804AE3C6),
+            content = Color(0xFFF3FFFC),
+        )
+        TunnelStatus.STARTING, TunnelStatus.RECONNECTING -> ConnectionActionColors(
+            outer = Color(0xFF183454),
+            inner = Color(0xFF5FA8FF),
+            border = Color(0x80A8CCFF),
+            content = Color(0xFFF2F7FF),
+        )
+        TunnelStatus.STOPPING -> ConnectionActionColors(
+            outer = Color(0xFF43311A),
+            inner = Color(0xFFFFC980),
+            border = Color(0x80FFD6A0),
+            content = Color(0xFFFFFAF2),
+        )
+        TunnelStatus.ERROR -> ConnectionActionColors(
+            outer = Color(0xFF4D1B22),
+            inner = Color(0xFFFF8E8E),
+            border = Color(0x80FFB6B6),
+            content = Color(0xFFFFF5F5),
+        )
+        TunnelStatus.IDLE -> ConnectionActionColors(
+            outer = Color(0xFF0F2135),
+            inner = Color(0xFF163451),
+            border = Color(0x804AE3C6),
+            content = Color(0xFFF2F7FF),
+        )
+    }
+}
+
+private fun actionTitleRes(status: TunnelStatus): Int {
+    return when (status) {
+        TunnelStatus.CONNECTED -> R.string.home_circle_connected
+        TunnelStatus.STARTING, TunnelStatus.RECONNECTING -> R.string.home_circle_connecting
+        TunnelStatus.STOPPING -> R.string.home_circle_stopping
+        TunnelStatus.ERROR, TunnelStatus.IDLE -> R.string.action_connect
+    }
+}
+
+private fun actionEmojiRes(status: TunnelStatus): Int {
+    return when (status) {
+        TunnelStatus.CONNECTED -> R.string.home_circle_emoji_connected
+        TunnelStatus.STARTING, TunnelStatus.RECONNECTING, TunnelStatus.STOPPING -> R.string.home_circle_emoji_connecting
+        TunnelStatus.ERROR -> R.string.home_circle_emoji_error
+        TunnelStatus.IDLE -> R.string.home_circle_emoji_idle
+    }
+}
+
+private fun actionSubtitleRes(status: TunnelStatus): Int {
+    return when (status) {
+        TunnelStatus.CONNECTED -> R.string.home_circle_disconnect_hint
+        TunnelStatus.STARTING, TunnelStatus.RECONNECTING -> R.string.home_circle_wait_hint
+        TunnelStatus.STOPPING -> R.string.home_circle_wait_hint
+        TunnelStatus.ERROR -> R.string.home_circle_retry_hint
+        TunnelStatus.IDLE -> R.string.home_circle_connect_hint
     }
 }

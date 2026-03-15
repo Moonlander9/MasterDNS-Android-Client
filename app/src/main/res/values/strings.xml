@@ -30,10 +30,23 @@
     <string name="action_copy_profile">Copy Profile</string>
     <string name="action_import_profile">Import Profile</string>
     <string name="action_show_profile_qr">Show Profile QR</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
     <string name="action_close">Close</string>
 
     <string name="home_status_title">Tunnel Status</string>
     <string name="home_status_pill">%1$s</string>
+    <string name="home_simple_title">Connect in one tap</string>
+    <string name="home_fetch_profile">Fetch New Profile</string>
+    <string name="home_remote_profile_ready">Remote profile is ready to fetch.</string>
+    <string name="home_remote_profile_setup_hint">Set the remote profile once from the top menu, then this button becomes your one-tap refresh.</string>
+    <string name="home_circle_connected">Connected</string>
+    <string name="home_circle_connecting">Connecting</string>
+    <string name="home_circle_stopping">Disconnecting</string>
+    <string name="home_circle_connect_hint">Tap to connect</string>
+    <string name="home_circle_disconnect_hint">Tap to disconnect</string>
+    <string name="home_circle_wait_hint">Please wait</string>
+    <string name="home_circle_retry_hint">Tap to retry</string>
     <string name="home_hero_title">Private connection control</string>
     <string name="home_status_value">State: %1$s</string>
     <string name="home_status_code">Code: %1$s</string>
@@ -249,9 +262,103 @@
     <string name="toast_logs_exported">Diagnostics exported</string>
     <string name="toast_logs_export_failed">Failed to export diagnostics: %1$s</string>
     <string name="toast_logs_copied">Logs copied to clipboard</string>
+    <string name="menu_more_actions">More actions</string>
+    <string name="menu_remote_profile_setup">Remote Profile Setup</string>
+    <string name="remote_profile_dialog_title">Remote Profile Setup</string>
+    <string name="remote_profile_dialog_subtitle">Save the remote profile endpoint here once, then use the Home screen to fetch updates with one tap.</string>
 
     <string name="error_invalid_config">Invalid config</string>
     <string name="error_vpn_permission_denied">VPN permission denied</string>
     <string name="error_profile_import_failed">Profile import failed: %1$s</string>
     <string name="error_remote_profile_failed">Remote profile failed: %1$s</string>
+    <string name="generic_unknown">unknown</string>
+    <string name="clipboard_profile_label">MasterDnsVPN Profile</string>
+    <string name="home_circle_emoji_connected">😊</string>
+    <string name="home_circle_emoji_connecting">🤔</string>
+    <string name="home_circle_emoji_error">😢</string>
+    <string name="home_circle_emoji_idle">🫣</string>
+
+    <string name="scan_status_idle">Idle</string>
+    <string name="scan_status_running">Running</string>
+    <string name="scan_status_paused">Paused</string>
+    <string name="scan_status_completed">Completed</string>
+    <string name="scan_status_cancelled">Cancelled</string>
+    <string name="scan_status_error">Error</string>
+
+    <string name="scanner_speed_value">%1$.1f IP/s</string>
+    <string name="scanner_bundled_cidr_label">Bundled Iran CIDRs (PYDNS)</string>
+    <string name="scanner_transport_tcp_udp">TCP/UDP</string>
+    <string name="scanner_transport_tcp_only">TCP only</string>
+    <string name="scanner_transport_udp_only">UDP only</string>
+    <string name="scanner_transport_none">None</string>
+    <string name="scanner_security_dnssec">DNSSEC</string>
+    <string name="scanner_security_open_resolver">Open Resolver</string>
+    <string name="scanner_security_hijacked">Hijacked</string>
+    <string name="scanner_security_secure">Secure</string>
+
+    <string name="scanner_error_select_cidr_before_scan">Select a CIDR file before scanning</string>
+    <string name="scanner_error_cidr_file_not_selected">CIDR file not selected</string>
+    <string name="scanner_error_invalid_cidr_uri">Invalid CIDR URI</string>
+    <string name="scanner_error_parse_selected_cidr_file">Unable to parse selected CIDR file</string>
+    <string name="scanner_error_open_cidr_file">Unable to open CIDR file</string>
+    <string name="scanner_error_manual_save_failed">Manual save failed</string>
+    <string name="scanner_error_no_results_available">No results available</string>
+    <string name="scanner_error_unable_to_read_cidr_file">Unable to read CIDR file</string>
+    <string name="scanner_error_cidr_file_empty_or_invalid">CIDR file is empty or invalid</string>
+    <string name="scanner_error_no_rows_matched_export_filter">No rows matched export filter</string>
+    <string name="scanner_error_failed_to_create_results_directory">Failed to create scanner_results directory</string>
+
+    <string name="scanner_message_scan_paused">Scan paused</string>
+    <string name="scanner_message_scan_resumed">Scan resumed</string>
+    <string name="scanner_message_manual_shuffle_requested">Manual shuffle requested</string>
+    <string name="scanner_message_scan_cancelled">Scan cancelled</string>
+    <string name="scanner_message_results_saved">Results saved</string>
+    <string name="scanner_message_failed_to_read_cidr_file">Failed to read CIDR file</string>
+    <string name="scanner_message_no_valid_cidr_ranges">No valid CIDR ranges found</string>
+    <string name="scanner_message_proxy_test_unavailable_with_reason">Proxy test unavailable: %1$s</string>
+    <string name="scanner_message_scanning_started">Scanning started</string>
+    <string name="scanner_message_extra_tests_updated">Extra tests updated for %1$s</string>
+    <string name="scanner_message_proxy_test_unavailable">Proxy test unavailable</string>
+    <string name="scanner_message_proxy_testing">Proxy testing %1$s</string>
+    <string name="scanner_message_proxy_test_result">Proxy test %1$s for %2$s</string>
+    <string name="scanner_message_scanning_in_progress">Scanning in progress</string>
+    <string name="scanner_message_reshuffling_stream_order">Reshuffling stream order</string>
+    <string name="scanner_message_results_auto_saved">Results auto-saved</string>
+    <string name="scanner_message_scan_completed">Scan completed</string>
+    <string name="scanner_message_scanner_failed">Scanner failed</string>
+
+    <string name="csv_header_dns">DNS</string>
+    <string name="csv_header_ping_ms">Ping (ms)</string>
+    <string name="csv_header_proxy_test">Proxy Test</string>
+    <string name="csv_header_ip_version">IPv4/IPv6</string>
+    <string name="csv_header_tcp_udp">TCP/UDP</string>
+    <string name="csv_header_security">Security</string>
+    <string name="csv_header_edns0">EDNS0</string>
+    <string name="csv_header_resolved_ip">Resolved IP</string>
+    <string name="csv_header_isp">ISP</string>
+
+    <string name="validation_protocol_type_socks5_only">Android v1 supports PROTOCOL_TYPE=SOCKS5 only.</string>
+    <string name="validation_encryption_method_range">Android supports DATA_ENCRYPTION_METHOD values 1 through 5 only.</string>
+    <string name="validation_encryption_key_required">ENCRYPTION_KEY is required.</string>
+    <string name="validation_domains_required">DOMAINS must include at least one non-empty domain.</string>
+    <string name="validation_resolvers_required">RESOLVER_DNS_SERVERS must include at least one DNS resolver.</string>
+    <string name="validation_listen_ip_local_only">LISTEN_IP must be 127.0.0.1 on Android for local-only binding.</string>
+    <string name="validation_listen_port_range">LISTEN_PORT must be between 1 and 65535.</string>
+    <string name="validation_socks_timeout_positive">SOCKS_HANDSHAKE_TIMEOUT must be greater than 0.</string>
+    <string name="validation_upload_compression_range">UPLOAD_COMPRESSION_TYPE must be between 0 and 3.</string>
+    <string name="validation_download_compression_range">DOWNLOAD_COMPRESSION_TYPE must be between 0 and 3.</string>
+    <string name="validation_split_allowlist_requires_package">SPLIT_ALLOWLIST mode requires at least one package in SPLIT_ALLOWLIST_PACKAGES.</string>
+    <string name="validation_split_allowlist_blank_package">SPLIT_ALLOWLIST_PACKAGES must not contain blank package names.</string>
+
+    <string name="error_start_vpn_service_failed">Failed to start VPN service: %1$s</string>
+    <string name="error_stop_vpn_service_failed">Failed to stop VPN service: %1$s</string>
+    <string name="error_unable_to_sign_remote_profile_request">Unable to sign remote profile request</string>
+    <string name="error_unable_to_open_remote_profile_connection">Unable to open remote profile connection</string>
+    <string name="error_remote_server_returned_http">Remote server returned HTTP %1$d</string>
+    <string name="error_remote_server_returned_empty_profile">Remote server returned an empty profile</string>
+    <string name="error_server_address_required">Server address is required</string>
+    <string name="error_server_must_use_http_or_https">Server must use http:// or https://</string>
+    <string name="error_invalid_server_address">Invalid server address</string>
+    <string name="error_server_address_query_fragment_not_allowed">Server address must not include a query or fragment</string>
+    <string name="error_profile_name_required">Profile name is required</string>
 </resources>
