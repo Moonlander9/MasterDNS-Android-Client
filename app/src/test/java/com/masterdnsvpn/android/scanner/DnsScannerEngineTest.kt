@@ -1,5 +1,7 @@
 package com.masterdnsvpn.android.scanner
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -8,19 +10,26 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.BufferedReader
 import java.io.File
 import java.io.StringReader
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class DnsScannerEngineTest {
 
     @Test
     fun scannerEngine_runsPipeline_withFakes_andAutoSavesCsv() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val tempDir = createTempDir(prefix = "scanner-test-")
+        val appContext = ApplicationProvider.getApplicationContext<Context>()
 
         val engine = DnsScannerEngine(
+            appContext = appContext,
             scope = this,
             networkClient = FakeNetworkClient(),
             proxyTester = FakeProxyTester(),
